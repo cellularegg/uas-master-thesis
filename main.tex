@@ -1,0 +1,121 @@
+%
+% FH Technikum Wien
+% !TEX encoding = UTF-8 Unicode
+% LTeX: language=en
+%
+% Preparing master's and bachelor's theses at UAS Technikum Wien using LaTeX and the TWBOOK class
+%
+% To create your own document, complete the following steps:
+% 1) Configure \documentclass[..]
+%    * Master's or bachelor's thesis
+%      * Master   ... master's thesis
+%      * Bachelor ... bachelor's thesis
+%    * Language (english, german, ngerman)
+%    * Citation standard (Harvard, IEEE) (default: IEEE)
+%    * Biber or BibTeX as the bibliography backend (Biber, BibTeX) (default: Biber)
+% 2) Enter the degree course
+% 3) Complete the title page, abstract, etc.
+% 4) Write the thesis (enter the literature sources used in Literatur.bib)
+%
+% Tested with TeXstudio using UTF-8 character encoding (= ansinew/latin1) and TeX Live on Ubuntu
+% Note that the file encoding must match the encoding specified for the inputenc package!
+% The encoding of the twbook.cls file MUST be ANSI!
+% When using UTF-8, both the document and the BibTeX file must be encoded as UTF-8!
+%
+% Please send bug reports and feedback by email to latex@technikum-wien.at
+%
+% Version V2.24 from 2024-12-19, otrebski
+%
+\documentclass[Master,english,IEEE]{twbook}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{todonotes}
+\usepackage{booktabs}
+
+% Enter the degree course here
+\degreecourse{Data Science}
+
+\addbibresource{Literatur.bib}
+\addbibresource{master-thesis.bib}
+
+%% Define additional bibliography databases here if required
+
+% The following packages provide otherwise unavailable features
+\usepackage{blindtext}
+
+%
+% Entries for the title page, abstract, etc.
+%
+\title{Title of the Thesis\todo[inline]{replace}}
+\author{David Zelenay, BSc.}
+\studentnumber{XXXXXXXXXXXXXXX \todo[inline]{replace}}
+%\author{Title First Name Last Name, Degree\and{}Title First Name Last Name, Degree}
+%\studentnumber{XXXXXXXXXXXXXXX\and{}XXXXXXXXXXXXXXX}
+\supervisor{Title First Name Last Name, Degree \todo[inline]{replace}}
+%\supervisor[Reviewer]{Title First Name Last Name, Degree}
+%\supervisor[Reviewer]{Title First Name Last Name, Degree}
+%\secondsupervisor{Title First Name Last Name, Degree}
+%\secondsupervisor[Reviewer]{Title First Name Last Name, Degree}
+%\secondsupervisor[Reviewers]{Title First Name Last Name, Degree}
+\place{Vienna}
+\kurzfassung{\blindtext\todo[inline]{replace}}
+\schlagworte{Keyword1, Keyword2, Keyword3, Keyword4 \todo[inline]{replace}}
+\outline{\blindtext\todo[inline]{replace}}
+\keywords{Keyword1, Keyword2, Keyword3, Keyword4\todo[inline]{replace}}
+%\acknowledgements{\blindtext}
+
+\begin{document}
+
+\maketitle
+\include{chapters/1_intro.tex}
+\include{chapters/2_data.tex}
+\include{chapters/3_methods.tex}
+\include{chapters/4_results.tex}
+\include{chapters/5_discussion.tex}
+
+% Document your AI tools here. They will automatically be added to a table.
+% \aitoolentry{DeepL Translate}{Translation of an article in English}{Source (XXX), Chapter X on page X-X}
+% \aitoolentry{Chat GPT 4.0}{Grammar and Spelling}{"Please list issues with spelling and grammar in the following text: ...", Entire document}
+\aitoolentry{Chat GPT (5.6 Sol, Tera and Luna)}{Coding Assistance}{Code review, code completion, and code generation}
+\aitoolentry{Claude (Sonet 5, Opus 5)}{Coding Assistance}{Code review, code completion, and code generation}
+\aitoolentry{Chat GPT (5.6 Sol, Tera and Luna)}{Grammar and Spelling}{Grammar, spelling and translation check of the entire document}
+\aitoolentry{Claude (Sonet 5, Opus 5)}{Grammar and Spelling}{Grammar, spelling and translation check of the entire document}
+
+%
+% The lists begin here.
+%
+\clearpage
+\printbibliography
+\clearpage
+
+% List of figures
+\listoffigures
+\clearpage
+
+% List of tables
+\listoftables
+\clearpage
+
+% List of AI tools used
+\listaitools
+\clearpage
+
+\phantomsection
+\addcontentsline{toc}{chapter}{\listacroname}
+\chapter*{\listacroname}
+\begin{acronym}[XXXXX]
+    \acro{ABC}[ABC]{Alphabet}
+    \acro{WWW}[WWW]{world wide web}
+    \acro{ROFL}[ROFL]{Rolling on floor laughing}
+\end{acronym}
+
+%
+% The appendix begins here.
+%
+\clearpage
+\appendix
+\chapter{Appendix A}
+\todo{Change this to the actual appendix}
+\clearpage
+\chapter{Appendix B}
+\end{document}

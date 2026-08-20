@@ -258,14 +258,14 @@ urlcolor=TWblue, urlbordercolor=white}
     \renewcommand*{\doctypeprint}{BACHELOR PAPER}}{}
 
 
-\newcommand*{\@cover}{PICs/fhtw_cover.png}
+\newcommand*{\@cover}{figures/fhtw_cover.png}
 \newcommand{\cover}[1]{\gdef\@cover{#1}}
 
 \Ifstr{\doctype}{}{%
-  \renewcommand*{\@cover}{PICs/fhtw_cover.png}%
+  \renewcommand*{\@cover}{figures/fhtw_cover.png}%
 }{\Ifstr{\@institution}{Technikum}%
-  {\renewcommand*{\@cover}{PICs/fhtw_cover.png}}%
-  {\renewcommand*{\@cover}{PICs/fhtw_cover.png}}}
+  {\renewcommand*{\@cover}{figures/fhtw_cover.png}}%
+  {\renewcommand*{\@cover}{figures/fhtw_cover.png}}}
 \newcommand*{\@supervisor}{}
 \newcommand*{\@supervisordesc}{}
 \newcommand{\supervisor}[2][]{\gdef\@supervisordesc{#1}\gdef\@supervisor{#2}}
