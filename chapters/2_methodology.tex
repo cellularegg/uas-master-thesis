@@ -4,14 +4,31 @@
 
 
 \section{Water Level Data}
-FloodAlert \cite{FloodAlertWaterLevels}
+The main data source for the thesis is the FloodAlert water level data \cite{FloodAlertWaterLevels}. To limit the scope of the thesis a single station is selected as the forecasting target. The target station is on the Danube and located in Korneuburg (a suburb of Vienna). The main reasons for selecting this station are the availability and quality of the data, as well as its popularity 
+(measured by notification subscribers). % TODO Check with Johannes if I can include that
+Additionally the station has multiple upstream measurement stations, which allows for the investigation of the effect of upstream data on forecast performance. 
+
+Each station provides at most two features: water level and flow rate. Since not every station provides both features, the flow rate has been dismissed as a feature and just the water level is used. The resolution of the historical water level data is hourly, only with the last 90 days being available in ``raw'' (mostly 15-minute) resolution dating back to August 4, 2014 for the target station. 
+
 \section{Weather Data}
-GeoSphere Austria INCA-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021}
-Why GeoSphere? Because they provide historical weather data with hourly availability thus making it suitable for the forecasting task.
+The weather data was fetched from GeoSphere Austria using the \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021}. The GeoSphere \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021} was used because it provides hourly historical weather data dating back to March 15, 2011, with a spatial resolution of 1 km. Another reason for using this dataset was the hourly update frequency, thus making it suitable for real-time forecasting. The dataset contains several weather variables like temperature, precipitation, wind speed, and humidity. Precipitation and temperature were selected as the weather variables.
 
 \section{Exploratory Analysis}
+This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not stated otherwise the analysis is based on the processed data as described in \autoref{sec:data-preprocessing}. 
+\autoref{fig:mapplot} shows the location of the target measurement station and its upstream stations. % TODO Add figure of map
+
+\autoref{tab:station-data-coverage} shows the data completeness of all upstream stations with at least 90\% temporal overlap with the target station (207241-at).
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/station_data_coverage.tex}
+  \caption{Coverage of water level data across stations. (Total row count: 105,336)}\label{tab:station-data-coverage}
+\end{table}
+
+
 
 \section{Data Preprocessing}
+\label{sec:data-preprocessing}
 Only values greater than zero are valid, otherwise they're set to none
 
 \section{Feature Engineering}
