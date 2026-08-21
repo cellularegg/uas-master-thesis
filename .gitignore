@@ -328,3 +328,6 @@ TSWLatexianTemp*
 
 .DS_Store
 notes.md
+count_words.py
+word_count_history.json
+main.pdf

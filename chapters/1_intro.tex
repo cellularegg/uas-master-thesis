@@ -2,11 +2,23 @@
 
 \section{Motivation}
 
-\section{Research Questions}
 
-\begin{enumerate}
-    \item Which forecast approach performs best for the given data?
-    \item How do neighboring stations and weather data affect the forecast performance?
-    \item How does the forecast performance change with lead time?
-    \item In which scenarios does the model excel and in which does it struggle?
-\end{enumerate}
+\section{Research Questions}
+\autoref{tab:research-questions} shows the research questions.
+\begin{table}[htbp]
+    \centering
+    \caption{Research questions, methods, and expected result types}
+    \label{tab:research-questions}
+    \begin{tabularx}{\textwidth}{@{}XXX@{}}
+        \toprule
+        \textbf{\ac{RQ}} & \textbf{Method} & \textbf{Type of expected result} \\
+        \midrule
+        \textbf{\ac{RQ}1:} Which forecasting approach provides the best predictive performance for short-term water level forecasting? & Benchmarking & Comparison of forecasting models using predefined performance metrics \\
+        \addlinespace
+        \textbf{\ac{RQ}2:} How does incorporating data from neighboring stations and weather information affect forecast performance? & Data engineering, benchmarking & Comparison of forecast performance across different feature subsets \\
+        \addlinespace
+        \textbf{\ac{RQ}3:} How does forecast performance vary with lead time and across different water level regimes? & Performance analysis & Comparison of forecast performance across lead times and water level regimes\\
+        \addlinespace
+        \bottomrule
+    \end{tabularx}
+\end{table}
