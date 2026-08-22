@@ -17,7 +17,7 @@ The weather data was fetched from GeoSphere Austria using the \ac{INCA}-v1 datas
 This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not stated otherwise the analysis is based on the processed data as described in \autoref{sec:data-preprocessing}. 
 \autoref{fig:mapplot} shows the location of the target measurement station and its upstream stations. % TODO Add figure of map
 
-\autoref{tab:station-data-coverage} shows the data completeness of all upstream stations with at least 90\% temporal overlap with the target station (207241-at).
+\autoref{tab:station-data-coverage} shows the data completeness of all upstream stations (located in Austria) with at least 90\% temporal overlap with the target station (207241-at).
 
 \begin{table}[htbp]
   \centering
@@ -26,10 +26,22 @@ This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not
 \end{table}
 
 
+%TODO Think of which plots to add here.
 
 \section{Data Preprocessing}
 \label{sec:data-preprocessing}
-Only values greater than zero are valid, otherwise they're set to none
+The preprocessing pipeline consists of four main stages: the water level data is cleaned, weather data is integrated with the water level observations, the individual station datasets are merged into a single data frame, and finally the dataset is split into training and test sets.
+
+The water level data is fetched from the FloodAlert API \cite{SOBOSGmbHPublic_waterlevel_api_doc2026}. The measurements are aligned to an hourly temporal resolution, and timestamps are converted to UTC. Invalid measurements, such as values of -9999 or 0, are replaced with missing values, only positive water level values are considered valid. Subsequently, short missing-value gaps of up to six hours are filled using linear interpolation, while longer gaps remain missing. Additionally, an indicator column is added to record whether individual values are imputed.
+
+The weather data \cite{geosphereaustriaINCAv11Meteorologische2021} is then retrieved based on the geographical location of each measurement station and joined with the processed water level data. A left join is used to preserve all water level observations, even if corresponding weather measurements are unavailable.
+
+Afterwards, the individual station datasets containing water level and weather data are merged into a single data frame, provided that the station timeline overlaps with the target station by at least 90\%, to ensure sufficient temporal coverage of upstream station features. Two out of ten upstream stations do not meet this criterion and are therefore excluded.
+
+The final preprocessing step is the chronological split into training and test datasets. The training dataset contains the first 80\% of the temporal range, while the remaining 20\% is reserved for testing. The split is based on timestamps rather than the number of valid water level observations, such that the training and test sets are defined by fixed time periods and not by the amount of available data. The split is performed in the preprocessing stage to ensure that the test dataset remains unseen thereby preventing data leakage during feature engineering and model training.
+
+
+
 
 \section{Feature Engineering}
 
