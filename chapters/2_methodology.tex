@@ -36,18 +36,80 @@ The water level data is fetched from the FloodAlert API \cite{SOBOSGmbHPublic_wa
 
 The weather data \cite{geosphereaustriaINCAv11Meteorologische2021} is then retrieved based on the geographical location of each measurement station and joined with the processed water level data. A left join is used to preserve all water level observations, even if corresponding weather measurements are unavailable.
 
-Afterwards, the individual station datasets containing water level and weather data are merged into a single data frame, provided that the station timeline overlaps with the target station by at least 90\%, to ensure sufficient temporal coverage of upstream station features. Two out of ten upstream stations do not meet this criterion and are therefore excluded.
+Afterwards, the individual station datasets containing water level and weather data are merged into a single data frame, provided that the station timeline overlaps with the target station by at least 90\%, to ensure sufficient temporal coverage of upstream station features. Two out of nine upstream stations do not meet this criterion and are therefore excluded.
 
 The final preprocessing step is the chronological split into training and test datasets. The training dataset contains the first 80\% of the temporal range, while the remaining 20\% is reserved for testing. The split is based on timestamps rather than the number of valid water level observations, such that the training and test sets are defined by fixed time periods and not by the amount of available data. The split is performed in the preprocessing stage to ensure that the test dataset remains unseen thereby preventing data leakage during feature engineering and model training.
 
-
-
-
 \section{Feature Engineering}
+The feature engineering step creates additional features from the preprocessed data. The engineered features are divided into the following categories:
+\begin{enumerate}
+  \item Lag: Past water level values.
+  \item Change features: Differences between current and past water levels.
+  \item Rolling statistics: Mean, standard deviation, and other summary statistics over a rolling window.
+  \item Weather summaries: Aggregated weather data over a rolling window, such as total precipitation or average temperature.
+  \item Quality indicators: Number of imputed values in the past x hours
+  \item Calendar features: Encoding of the timestamp into features such as hour of the day, day of the week.
+\end{enumerate}
+To not explode the feature space only the target station gets the additional features calculated. Other upstream stations only provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}. To prevent data leakage, the feature engineering is performed separately on the training and test datasets. For \ac{CV} data leakage is not an issue, since expanding window \ac{CV} is used, see \autoref{sec:experimental-design}.
+\begin{table}[htbp]
+    \centering
+    \begin{tabularx}{\textwidth}{@{}lXl@{}}
+        \toprule
+        \textbf{Feature group} & \textbf{Features} & \textbf{Configuration} \\
+        \midrule
+        Water level lags
+        & Lagged water level observations
+        & 1, 3, 6, 12, 24, 48, 72, 168 h \\
+        \addlinespace
+        Water level changes
+        & Difference between the current water level and a previous observation
+        & 1, 3, 6, 12, 24 h \\
+        \addlinespace
+        Rolling water level statistics
+        & Rolling mean, standard deviation, minimum, and maximum of the water level
+        & 6, 24, 72, 168 h \\
+        \addlinespace
+        Imputation history
+        & Number of imputed water level observations within the preceding window
+        & 6, 24, 72, 168 h \\
+        \addlinespace
+        Precipitation history
+        & Rolling sum of precipitation
+        & 6, 24, 72, 168 h \\
+        \addlinespace
+        Temperature history
+        & Rolling mean of air temperature
+        & 6, 24, 72, 168 h \\
+        \addlinespace
+        Temperature extrema
+        & Rolling minimum and maximum of air temperature
+        & 24 h \\
+        \addlinespace
+        Calendar features
+        & Cyclic sine and cosine encoding of hour of day, day of week, and day of year
+        &  \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Engineered features used for water level forecasting}\label{tab:engineered-features}
+\end{table}
+The final step of the feature engineering is to add a target column for each hour of the forecast horizon. This makes it possible to train and test the models based on the entire forecast horizon. Additionally, a check is performed to ensure that all target values are valid, i.e. neither missing nor imputed. If any of the target values are invalid, the flag is set to false and the sample is subsequently excluded from model training and evaluation.
+
+This results in a final dataset with 81 features. 53 features are calculated from the target station plus four features for each of the seven upstream stations. 
 
 \section{Forecasting Strategy}
+The general approach is to use a \ac{MIMO} strategy. This means that a single model predicts multiple future time steps at once, rather than using a recursive strategy where the model predicts one time step at a time and feeds the prediction back into the model for the next time step. The \ac{MIMO} strategy is chosen to mitigate the error accumulation that can occur with recursive strategies \cite{bentaiebReviewComparisonStrategies2012}. \autoref{eq:mimo-forecasting} shows the concept of a \ac{MIMO} forecasting model, where $X_t$ is the input data at time $t$, $\hat{y}_{t+x}$ is the predicted water level at time $t+x$, and $H$ is the forecast horizon. The forecast horizon is set to 24 hours.
+\begin{equation}
+  X_t \longrightarrow \text{Model} \longrightarrow [\hat{y}_{t+1}, \hat{y}_{t+2}, \ldots, \hat{y}_{t+H}]
+  \label{eq:mimo-forecasting}
+\end{equation}
+Another reason for choosing a \ac{MIMO} approach is to reduce the number of models, thus also reducing training time and complexity of the system. If the goal is to roll out the system to multiple stations, training and inference time should be kept as low as possible.
+% \cite{bentaiebReviewComparisonStrategies2012} \cite{greenStratifyUnifyingMultistep2025} \cite{bentaiebMultipleoutputModelingMultistepahead2010}
+
 
 \section{Experimental Design}
+\label{sec:experimental-design}
+% Expanding window \ac{CV} is used for model evaluation \cite{hewamalageForecastEvaluationData2023} \cite{cerqueiraEvaluatingTimeSeries2020}.
+
 
 \section{Models}
 
