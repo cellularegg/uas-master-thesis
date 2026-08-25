@@ -41,6 +41,7 @@ Afterwards, the individual station datasets containing water level and weather d
 The final preprocessing step is the chronological split into training and test datasets. The training dataset contains the first 80\% of the temporal range, while the remaining 20\% is reserved for testing. The split is based on timestamps rather than the number of valid water level observations, such that the training and test sets are defined by fixed time periods and not by the amount of available data. The split is performed in the preprocessing stage to ensure that the test dataset remains unseen thereby preventing data leakage during feature engineering and model training.
 
 \section{Feature Engineering}
+\label{sec:feature-engineering}
 The feature engineering step creates additional features from the preprocessed data. The engineered features are divided into the following categories:
 \begin{enumerate}
   \item Lag: Past water level values.
@@ -108,9 +109,63 @@ Another reason for choosing a \ac{MIMO} approach is to reduce the number of mode
 
 \section{Experimental Design}
 \label{sec:experimental-design}
-% Expanding window \ac{CV} is used for model evaluation \cite{hewamalageForecastEvaluationData2023} \cite{cerqueiraEvaluatingTimeSeries2020}.
+The dataset is split into training and test sets (80/20), the test set is only used for the final evaluation, while the training set is used for training, hyperparameter tuning, feature selection and model selection. Thereby ensuring that the test set remains completely unseen during the model development process.  Expanding window \ac{CV} is used to evaluate different hyperparameter and features \cite{hewamalageForecastEvaluationData2023}. \autoref{fig:expanding-window-cv} shows the exact \ac{CV} setup, 50\% of the training data is used for training in the first fold and about 10\% of the training data is used for validation in each fold. The training set grows by about 10\% in each fold. Between the folds' training and validation sets there is a gap of 24 hours (equal to the forecast horizon) to prevent data leakage. Before training the rows are checked for eligibility. This check contains the following conditions: all target values must exist and not be imputed and all features must be valid (not missing), this also includes features not used in the current feature subset. This decision has been made to provide a fair comparison between the different subsets regardless of the number of available rows per feature. % Todo make this sentence more clear
+\input{figures/expanding-window-cv.tex}
+
+The full \ac{CV} is done for each model, hyperparameter configuration, and feature set. \autoref{tab:feature-subsets} shows the various feature subsets used. Each hyperparameter combination is trained on all six feature subsets. After the \ac{CV} the best model is selected and retrained on the entire training set.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabularx}{\textwidth}{p{0.25\textwidth} X X}
+        \toprule
+        \textbf{Feature subset} & \textbf{Includes} & \textbf{Excludes} \\
+        \midrule
+        Full
+        & All available input features.
+        & Nothing. \\
+        \addlinespace
+        All-station hydrology, quality, and time
+        & Hydrological variables, data-quality indicators, and temporal features from all retained stations.
+        & Weather variables. \\
+        \addlinespace
+        Raw all stations
+        & Raw water level, imputation indicator, precipitation, and temperature variables from all retained stations.
+        & Engineered lag, rolling, and temporal features. \\
+        \addlinespace
+        Target station full
+        & All available input features from the target station.
+        & Predictors from upstream stations. \\
+        \addlinespace
+        Target-station hydrology, quality, and time
+        & Hydrological variables, data-quality indicators, and temporal features from the target station.
+        & Weather variables and predictors from upstream stations. \\
+        \addlinespace
+        Current water levels from all stations
+        & Current water-level measurements from all retained stations.
+        & Weather variables, quality indicators, temporal features, and all engineered features. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Feature subsets used in the experiments.}
+    \label{tab:feature-subsets}
+\end{table}
+
+% TODO Note that RNN uses different featres, since it needs a sequence of past observations.
+
+% TODO GRID SEARCH + Randomized grid search
+
+
+%\cite{cerqueiraEvaluatingTimeSeries2020}.
 
 
 \section{Models}
+The following models are used in the experiments: 
+\begin{enumerate}
+  \item \textbf{Persistence (Baseline)}
+  \item \textbf{Ridge}
+  \item \textbf{XGBoost}
+  \item \textbf{MLP}
+  \item \textbf{Extra Trees}
+  \item \textbf{RNN}
+\end{enumerate}
 
 \section{Model Evaluation}

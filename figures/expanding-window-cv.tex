@@ -1,0 +1,63 @@
+\begin{figure}[ht]
+    \centering
+    \begin{tikzpicture}[
+        x=1.25cm,
+        y=0.8cm,
+        font=\small
+    ]
+
+    % Fold 1
+    \node[anchor=east] at (0,0) {Fold 1};
+    \draw[fill=gray!20] (0,-0.25) rectangle (4.0,0.25);
+    \node at (2.0,0) {Training};
+    \draw[fill=gray!45] (4.2,-0.25) rectangle (5.0,0.25);
+    \node at (4.6,0) {\scriptsize Val.};
+
+    % Fold 2
+    \node[anchor=east] at (0,-1) {Fold 2};
+    \draw[fill=gray!20] (0,-1.25) rectangle (4.7,-0.75);
+    \node at (2.35,-1) {Training};
+    \draw[fill=gray!45] (4.9,-1.25) rectangle (5.7,-0.75);
+    \node at (5.3,-1) {\scriptsize Val.};
+
+    % Fold 3
+    \node[anchor=east] at (0,-2) {Fold 3};
+    \draw[fill=gray!20] (0,-2.25) rectangle (5.4,-1.75);
+    \node at (2.7,-2) {Training};
+    \draw[fill=gray!45] (5.6,-2.25) rectangle (6.4,-1.75);
+    \node at (6.0,-2) {\scriptsize Val.};
+
+    % Fold 4
+    \node[anchor=east] at (0,-3) {Fold 4};
+    \draw[fill=gray!20] (0,-3.25) rectangle (6.1,-2.75);
+    \node at (3.05,-3) {Training};
+    \draw[fill=gray!45] (6.3,-3.25) rectangle (7.1,-2.75);
+    \node at (6.7,-3) {\scriptsize Val.};
+
+    % Fold 5
+    \node[anchor=east] at (0,-4) {Fold 5};
+    \draw[fill=gray!20] (0,-4.25) rectangle (7.0,-3.75);
+    \node at (3.5,-4) {Training};
+    \draw[fill=gray!45] (7.2,-4.25) rectangle (8.0,-3.75);
+    \node at (7.6,-4) {\scriptsize Val.};
+
+    % Total split
+    \node[anchor=east] at (0,-5.3) {\textbf{Total}};
+
+    \draw[fill=gray!20]
+        (0,-5.55) rectangle (8,-5.05);
+    \node at (4,-5.3) {\textbf{Training (80\%)}};
+
+    \draw[fill=gray!65]
+        (8,-5.55) rectangle (10,-5.05);
+    \node at (9,-5.3) {\textbf{Test (20\%)}};
+
+    % Time axis
+    \draw[->] (0,-6.0) -- (10,-6.0)
+        node[right] {Time};
+
+    \end{tikzpicture}
+
+    \caption{Expanding window \ac{CV} with five folds, where the first fold uses 50\% of the training data for training and each validation set contains 10\% of the training data.}
+    \label{fig:expanding-window-cv}
+\end{figure}
