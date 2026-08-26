@@ -10,20 +10,92 @@ Additionally the station has multiple upstream measurement stations, which allow
 
 Each station provides at most two features: water level and flow rate. Since not every station provides both features, the flow rate has been dismissed as a feature and just the water level is used. The resolution of the historical water level data is hourly, only with the last 90 days being available in ``raw'' (mostly 15-minute) resolution dating back to August 4, 2014 for the target station. 
 
+\autoref{tab:water-level-stations} shows the water level measurement stations used in the analysis, including their FloodAlert links and data sources and position along the Danube river. The stations are ordered by their distance from the target station, with the closest upstream station listed first.
+\begin{table}[htbp]
+    \centering
+    \begin{tabularx}{\textwidth}{@{} l l X l c X @{}}
+        \toprule
+        \textbf{Station} &
+        \textbf{ID} &
+        \textbf{Location} &
+        \textbf{River km} &
+        \textbf{FloodAlert} &
+        \textbf{Data source} \\
+        \midrule
+        Korneuburg &
+        \texttt{207241-at} &
+        Korneuburg, Lower Austria &
+        1941.46 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207241-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://www.noe.gv.at/wasserstand/\#/en/Messstellen/Details/207241/Wasserstand/3Tage}{Link} \cite{WasserstandsnachrichtenUndHochwasserprognosen} \\
+
+        Kienstock &
+        \texttt{207357-at} &
+        Rossatz-Arnsdorf, Lower Austria (Wachau) &
+        2015.21 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207357-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://www.noe.gv.at/wasserstand/\#/de/Messstellen/Details/207357/Wasserstand/3Tage}{Link} \cite{WasserstandsnachrichtenUndHochwasserprognosen} \\
+
+        Grein (Schiffsstation) &
+        \texttt{207100-at} &
+        Grein, Upper Austria &
+        2079.10 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207100-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16670/Grein+\%28Schiffsstation\%29/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+
+        Mauthausen &
+        \texttt{207084-at} &
+        Mauthausen, Upper Austria &
+        2110.98 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207084-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16669/Mauthausen/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+
+        Linz &
+        \texttt{207068-at} &
+        Linz, Upper Austria &
+        2135.17 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207068-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16668/Linz/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+
+        Wilhering &
+        \texttt{207340-at} &
+        Wilhering, Upper Austria &
+        2144.04 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207340-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16671/Wilhering/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+
+        Engelhartszell &
+        \texttt{207027-at} &
+        Engelhartszell, Upper Austria &
+        2200.66 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207027-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16665/Engelhartszell/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+
+        Achleiten &
+        \texttt{207019-at} &
+        Freinberg, Upper Austria &
+        2223.05 &
+        \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207019-at}{Link} \cite{FloodAlertWaterLevels} &
+        \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16664/Achleiten/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
+        \bottomrule 
+    \end{tabularx}
+    \caption{Water level measurement stations used in the analysis.}
+    \label{tab:water-level-stations}
+\end{table}
 \section{Weather Data}
 The weather data was fetched from GeoSphere Austria using the \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021}. The GeoSphere \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021} was used because it provides hourly historical weather data dating back to March 15, 2011, with a spatial resolution of 1 km. Another reason for using this dataset was the hourly update frequency, thus making it suitable for real-time forecasting. The dataset contains several weather variables like temperature, precipitation, wind speed, and humidity. Precipitation and temperature were selected as the weather variables.
 
-\section{Exploratory Analysis}
-This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not stated otherwise the analysis is based on the processed data as described in \autoref{sec:data-preprocessing}. 
-\autoref{fig:mapplot} shows the location of the target measurement station and its upstream stations. % TODO Add figure of map
+% \section{Exploratory Analysis}
+% This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not stated otherwise the analysis is based on the processed data as described in \autoref{sec:data-preprocessing}. 
+% % \autoref{fig:mapplot} shows the location of the target measurement station and its upstream stations. % TODO Add figure of map
 
-\autoref{tab:station-data-coverage} shows the data completeness of all upstream stations (located in Austria) with at least 90\% temporal overlap with the target station (207241-at).
+% \autoref{tab:station-data-coverage} shows the data completeness of all upstream stations (located in Austria) with at least 90\% temporal overlap with the target station (207241-at).
 
-\begin{table}[htbp]
-  \centering
-  \input{tables/station_data_coverage.tex}
-  \caption{Coverage of water level data across stations. (Total row count: 105,336)}\label{tab:station-data-coverage}
-\end{table}
+% \begin{table}[htbp]
+%   \centering
+%   \input{tables/station_data_coverage.tex}
+%   \caption{Coverage of water level data across stations. (Total row count: 105,336)}\label{tab:station-data-coverage}
+% \end{table}
 
 
 %TODO Think of which things to discuss in the eda
@@ -51,7 +123,7 @@ The feature engineering step creates additional features from the preprocessed d
   \item Quality indicators: Number of imputed values in the past x hours
   \item Calendar features: Encoding of the timestamp into features such as hour of the day, day of the week.
 \end{enumerate}
-To not explode the feature space only the target station gets the additional features calculated. Other upstream stations only provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}. To prevent data leakage, the feature engineering is performed separately on the training and test datasets. For \ac{CV} data leakage is not an issue, since expanding window \ac{CV} is used, see \autoref{sec:experimental-design}.
+To not explode the feature space only the target station gets the additional features calculated. Other upstream stations only provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}.\todo{remove 168 h windows} To prevent data leakage, the feature engineering is performed separately on the training and test datasets. For \ac{CV} data leakage is not an issue, since expanding window \ac{CV} is used, see \autoref{sec:experimental-design}.
 \begin{table}[htbp]
     \centering
     \begin{tabularx}{\textwidth}{@{}lXl@{}}
@@ -95,8 +167,7 @@ To not explode the feature space only the target station gets the additional fea
 \end{table}
 The final step of the feature engineering is to add a target column for each hour of the forecast horizon. This makes it possible to train and test the models based on the entire forecast horizon. Additionally, a check is performed to ensure that all target values are valid, i.e. neither missing nor imputed. If any of the target values are invalid, the flag is set to false and the sample is subsequently excluded from model training and evaluation.
 
-This results in a final dataset with 81 features. 53 features are calculated from the target station plus four features for each of the seven upstream stations. 
-
+This results in a final dataset with 81\todo{update} features. 53\todo{update to match new features} features are calculated from the target station plus four features for each of the seven upstream stations. 
 \section{Forecasting Strategy}
 The general approach is to use a \ac{MIMO} strategy. This means that a single model predicts multiple future time steps at once, rather than using a recursive strategy where the model predicts one time step at a time and feeds the prediction back into the model for the next time step. The \ac{MIMO} strategy is chosen to mitigate the error accumulation that can occur with recursive strategies \cite{bentaiebReviewComparisonStrategies2012}. \autoref{eq:mimo-forecasting} shows the concept of a \ac{MIMO} forecasting model, where $X_t$ is the input data at time $t$, $\hat{y}_{t+x}$ is the predicted water level at time $t+x$, and $H$ is the forecast horizon. The forecast horizon is set to 24 hours.
 \begin{equation}
