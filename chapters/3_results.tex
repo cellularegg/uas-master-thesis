@@ -12,7 +12,7 @@ Data availability is examined in \autoref{fig:station-monthly-data-completeness}
 To investigate the potential contribution of neighboring stations, \autoref{fig:upstream-cross-correlation-heatmap} presents the Pearson correlation between upstream stations and the target station for lags of 0--72 hours.
 Finally, \autoref{fig:weather-future-change-spearman} presents the Spearman correlation between precipitation sums, temperature means and subsequent water level changes at the target station, providing an indication of the relationship between weather conditions and future water level development.
 
-As seen in \autoref{fig:target-water-level-history} there is quite some variability in the water level over time. The majority of the daily maximum stays below the alarm threshold of 545 cm. Values above the threshold are rare and short lived, which is to be expected. The highest water level observed is on the 15\textsuperscript{th} of September 2024, with a value of 761 cm. This value is in the test set which means that the model will be evaluated on a previously unseen extreme event, the model will likely not be able to predict this extreme value accurately. The highest weekly water level sum is about 274 mm, which has a z-score of 14.56. The mean weekly precipitation sum is about 13 mm. As expected there is no real trend, neither upward nor downward, in the water level over time. However high precipitation and high water levels do not always coincide, as seein in on the second highest water level measured at the 4\textsuperscript{th} of June 2024 (the spike before the highest spike). There the precipitation sum is relatively low (about 37 mm). This is also somewhat expected, as the water level is not only influenced by the precipitation at the target station, but also by all upstream precipitation.
+As seen in \autoref{fig:target-water-level-history} there is quite some variability in the water level over time. The majority of the daily maximum stays below the alarm threshold of 545 cm. Values above the threshold are rare and short lived, which is to be expected. The highest water level observed is on the 15\textsuperscript{th} of September 2024, with a value of 761 cm. This value is in the test set which means that the model will be evaluated on a previously unseen extreme event, the model will likely not be able to predict this extreme value accurately. The highest weekly water level sum is about 274 mm, which has a z-score of 14.56. The mean weekly precipitation sum is about 13 mm. As expected there is no real trend, neither upward nor downward, in the water level over time. However high precipitation and high water levels do not always coincide, as seen in on the second highest water level measured at the 4\textsuperscript{th} of June 2024 (the spike before the highest spike). There the precipitation sum is relatively low (about 37 mm). This is also somewhat expected, as the water level is not only influenced by the precipitation at the target station, but also by all upstream precipitation.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/target_water_level_history.pdf}
@@ -50,16 +50,118 @@ The heatmap in \autoref{fig:weather-future-change-spearman} shows the Spearman c
   \caption{Spearman correlations between precipitation sums / temperature means and future water level changes at the target station.}\label{fig:weather-future-change-spearman}
 \end{figure}
 
-
+\newpage % TODO REMOVE
 
 % TODO TAlk about hyperparameter spaces searched
 \section{Model Performance}
 Compare all model performances and select best model
+\subsection{\acl{CV} Model Comparison}
+
+% TODO Add feature subset table to the appendix and reference it here
+\autoref{tab:hyperparameter-tuning-results} shows the best performance for each model and its corresponding feature subset and hyperparameters. Overall the model with the lowest \ac{RMSE} is XGBoost with a \ac{CV} \ac{RMSE} of 12.43. The baseline model, persistence, has a \ac{CV} \ac{RMSE} of 18.13, which is significantly worse than all other models. \ac{RNN} and \ac{MLP} also performed similarly well with a \ac{CV} \ac{RMSE} of 0.23 and 0.3 higher than XGBoost. Extra Trees and Ridge performed worse than the other models, both with a \ac{CV} \ac{RMSE} of about 1 higher than XGBoost. Extra Trees was the only model where the best feature subset was not using all features (``Full''), with the exception for RNN which was only trained on the raw all stations feature subset. The definition of the feature subsets can be found in \autoref{sec:appendix-forecast-analysis} in \autoref{tab:feature-subset-definitions}. So Extra Trees did not benefit from the engineered features, while the other models did. The full list of searched hyperparameter spaces can be found in \autoref{sec:hyperparameter-search-spaces}.
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_tuning_results.tex}
+  \caption{Selected feature subsets, hyperparameters, and \ac{CV} \ac{RMSE} for the tuned forecasting models.}\label{tab:hyperparameter-tuning-results}
+\end{table}
+
+
+\autoref{fig:aggregate-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} of all trained models by displaying the mean and the standard deviation across the 5 folds. The standard deviation is used to indicate the variability of the model performance across different folds. XGBoost has the lowest mean \ac{CV} \ac{RMSE} and the lowest standard deviation, indicating that it performed equally well across all folds. Besides the persistence baseline, RNN has the highest standard deviation (2.17), indicating that its performance varied more across the folds. This further supports the selection of XGBoost as the best performing model, as it not only achieved the lowest mean \ac{CV} \ac{RMSE}, but also has the lowest spread of performance across the folds, indicating that it is more robust and consistent in its predictions.
+% Model XGBoost: RMSE=12.43 ± 1.78
+% Model RNN: RMSE=12.57 ± 2.17
+% Model MLP: RMSE=12.64 ± 2.15
+% Model Extra Trees: RMSE=13.27 ± 2.07
+% Model Ridge: RMSE=13.32 ± 2.08
+% Model Persistence: RMSE=18.13 ± 2.69
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/aggregate_cross_validation_rmse.pdf}
+  \caption{Aggregate \ac{CV} \ac{RMSE} of all trained models. The marker shows the mean across 5 folds, the error bar shows the standard deviation within the folds.}\label{fig:aggregate-cross-validation-rmse}
+\end{figure}
+% \subsection{Model Selection and Test Performance}
+
 \section{Feature Effects}
-Investigate feature importance and effects on the model performance
+This section will cover the effects of different feature subsets on the model performance. \autoref{fig:feature-subset-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} for XGBoost across the different feature subsets. All feature subsets are shown in \autoref{tab:feature-subset-definitions}. The worst performance is achieved when only using the target station's measurements without any weather data or upstream stations ($\text{\ac{RMSE}} = 16.76 \pm 1.91$). The best performance is achieved when using all features, however without the engineered features the performance is only slightly worse ($\text{\ac{RMSE}} = 12.90 \pm 1.79$). The engineered features therefore only provide a small improvement in performance. This small improvement suggest that most of the information is already contained in the raw measurements and the engineered features do not add much additional information. Especially not for a model like XGBoost, which is able to learn complex relationships between the features and the target variable. For simpler models like Ridge the engineered features provide a larger improvement in performance,  
+% Investigate feature importance and effects on the model performance
+% \subsection{Effect of Neighboring Stations}
+% Model Ridge, subset full: RMSE=13.32 ± 2.08
+% Model Ridge, subset all_station_hydrology_quality_time: RMSE=14.44 ± 1.89
+% Model Ridge, subset raw_all_stations: RMSE=14.08 ± 2.16
+% Model Ridge, subset target_station_full: RMSE=15.49 ± 2.58
+% Model Ridge, subset target_station_hydrology_quality_time: RMSE=16.18 ± 2.52
+% Model Ridge, subset current_water_levels_all_stations: RMSE=14.95 ± 2.25
+% Model XGBoost, subset full: RMSE=12.43 ± 1.78
+% Model XGBoost, subset all_station_hydrology_quality_time: RMSE=14.63 ± 1.91
+% Model XGBoost, subset raw_all_stations: RMSE=12.90 ± 1.79
+% Model XGBoost, subset target_station_full: RMSE=15.66 ± 2.76
+% Model XGBoost, subset target_station_hydrology_quality_time: RMSE=16.76 ± 3.06
+% Model XGBoost, subset current_water_levels_all_stations: RMSE=14.50 ± 1.92
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/feature_subset_cross_validation_rmse.pdf}
+  \caption{Cross-validation RMSE by input feature subset for the best candidate within each subset. Markers show the mean across 5 folds, error bars show the fold-to-fold standard deviation, and the dashed line shows the persistence baseline.}\label{fig:feature-subset-cross-validation-rmse}
+\end{figure}
+
+\autoref{fig:feature-subset-cross-validation-rmse} shows the change in \ac{CV} \ac{RMSE} for XGBoost across the different feature subsets, with regards to adding upstream stations and weather data. The addition of upstream stations led to a decrease in \ac{CV} \ac{RMSE} of 12.7\%. With the addition of weather data, the \ac{CV} \ac{RMSE} decreased by 6.5\%. Adding both upstream stations and weather data lead to a decrease in \ac{CV} \ac{RMSE} of 25.8\%. This leads to the conclusion that both upstream stations and weather data are important for improving the model performance, with upstream stations having a larger impact on the performance than weather data. This trend can be seen in all models (trained with different feature subsets), which can be seen in \autoref{sec:feature-subset-performance-comparison}.
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_performance_comparison_xgboost.tex}
+  \caption{\ac{CV} \ac{RMSE} for XGBoost for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-xgboost}
+\end{table}
+% \subsection{Effect of Weather Data}
 
 \section{Forecast Analysis}
-In depth analysis of the forecast performance (e.g.) e.g. performance over lead time, ... for the best/chosen model
+This section will analyze the forecasts of the best performing model, XGBoost, on the sealed test set. \autoref{fig:xgboost-best-forecast-window} shows the best 24-hour forecast on the sealed test set, with a \ac{RMSE} of 1.03. The forecast is able to capture the overall trend within the 24-hour window pretty well. In contrast \autoref{fig:xgboost-worst-forecast-window} shows the worst 24-hour forecast on the sealed test set, with a \ac{RMSE} of 135.71. The forecast does not capture the trend at all and is off by a large margin. This scenario is especially difficult for the model to predict since it is right before a sudden spike in water level, with the recent water level measurements decreasing. Thus the model predicts a further decrease in water level, while the actual water level increases sharply.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/xgboost_best_forecast_window.pdf}
+  \caption{Selected best 24-hour XGBoost forecast on the sealed test set, shown against the observed target-station water level.}\label{fig:xgboost-best-forecast-window}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/xgboost_worst_forecast_window.pdf}
+  \caption{Worst 24-hour XGBoost forecast on the sealed test set, with the observed target station water level.}\label{fig:xgboost-worst-forecast-window}
+\end{figure}
+
+\autoref{fig:xgboost-h1-forecast-timeline} shows the H+1 forecast of the XGBoost model against the observed water level at the target station from 2024-09-10 to 2024-09-22. This is the flood period in September 2024, which exceeds the highest water level in the training set. It can be clearly seen that the model is struggling to predict those extreme water levels above 600 cm accurately. The forecasted values barely exceed 600 cm, while the actual water level reaches water levels above 700 cm.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/xgboost_h1_forecast_timeline.pdf}
+  \caption{XGBoost H+1 forecast against the observed target station water level from 2024-09-10 to 2024-09-22.}\label{fig:xgboost-h1-forecast-timeline}
+\end{figure}
+
+
+\subsection{Performance Across Forecast Lead Times}
+\autoref{fig:sealed-test-performance-by-horizon} shows the test set \ac{RMSE} across the 24-hour forecast horizon for the selected XGBoost model and the persistence baseline. The persistence model performs better for the first six hours, with the XGBoost model performing better for the remaining forecast horizon. At H+1 persistence has a \ac{RMSE} of only 2.86 while XGBoost has a \ac{RMSE} of 9.18. One reason for this is that XGBoost 
+
+
+A detailed predicted vs actual scatterplot per horizon can be seen in \autoref{fig:xgboost-actual-vs-predicted-by-horizon} (in \autoref{sec:appendix-forecast-analysis})
+
+
+% The worse performance in lead times 1-5 is because the flood in September 2025, 
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/sealed_test_performance_by_horizon.pdf}
+  \caption{Test set \ac{RMSE} across the 24-hour forecast horizon for the selected XGBoost model and the persistence baseline.}\label{fig:sealed-test-performance-by-horizon}
+\end{figure}
+\subsection{Performance Across Water Level Regimes}
+\begin{table}[htbp]
+  \centering
+  \input{tables/performance_by_water_level_regime.tex}
+  \caption{Test \ac{MAE}, \ac{RMSE}, and \ac{ME} by water level regime for XGBoost. The Q1--Q4 bounds are derived from training measurements. N counts scored forecast values.}\label{tab:performance-by-water-level-regime}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/high_water_alarm_level_performance.tex}
+  \caption{Test set performance of XGBoost for all scored forecasts and where the actual level is above FloodAlert's threshold (545 cm). N denotes scored forecasts.}\label{tab:high-water-alarm-level-performance}
+\end{table}
+
 
 \section{Deployment}
 Deployment (Docker + FastAPI)

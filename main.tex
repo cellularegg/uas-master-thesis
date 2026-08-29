@@ -126,8 +126,81 @@
 %
 \clearpage
 \appendix
-\chapter{Appendix A}
-\todo{Change this to the actual appendix}
+\chapter{Appendix Forecast Analysis}
+
+\label{sec:appendix-forecast-analysis}
+test
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/xgboost_actual_vs_predicted_by_horizon.pdf}
+  \caption{Actual versus predicted water level on the sealed test set for the XGBoost model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:xgboost-actual-vs-predicted-by-horizon}
+\end{figure}
+
+\section{Hyperparameter Search Spaces}
+\label{sec:hyperparameter-search-spaces}
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_definitions.tex}
+  \caption{Definition of the six input feature subsets.}\label{tab:feature-subset-definitions}
+\end{table}
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_ridge.tex}
+  \caption{Ridge hyperparameter search space. Exhaustive grid: 5 alpha values x 2 log1p settings x 6 feature subsets.}\label{tab:hyperparameter-search-space-ridge}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_mlp.tex}
+  \caption{MLP hyperparameter search space. Random search: 16 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-mlp}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_xgboost.tex}
+  \caption{XGBoost hyperparameter search space. Random search: 32 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-xgboost}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_random_forest.tex}
+  \caption{Random Forest hyperparameter search space. Random search: 12 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-random-forest}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_extra_trees.tex}
+  \caption{Extra Trees hyperparameter search space. Random search: 24 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-extra-trees}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/hyperparameter_search_space_rnn.tex}
+  \caption{RNN hyperparameter search space. Random search: 16 candidates, raw all-stations input only.}\label{tab:hyperparameter-search-space-rnn}
+\end{table}
+\newpage
+
+\section{Feature Subset Performance Comparison}
+\label{sec:feature-subset-performance-comparison}
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_performance_comparison_ridge.tex}
+  \caption{\ac{CV} \ac{RMSE} for Ridge for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-ridge}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_performance_comparison_mlp.tex}
+  \caption{\ac{CV} \ac{RMSE} for MLP for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-mlp}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_performance_comparison_extra_trees.tex}
+  \caption{\ac{CV} \ac{RMSE} for Extra Trees for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-extra-trees}
+\end{table}
+
+% \todo{Change this to the actual appendix}
 \clearpage
 \chapter{Appendix B}
 \end{document}

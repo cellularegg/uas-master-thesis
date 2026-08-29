@@ -557,3 +557,4 @@ uv.lock
 pyproject.toml
 
 
+.vscode/

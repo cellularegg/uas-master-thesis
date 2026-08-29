@@ -2,7 +2,9 @@
 % ~ 20%
 % The second chapter should explain the methods used for answering the research questions. This includes the process as well as all empirical and technical tools. The description will naturally be based on literature, in the sense that it will refer to it – but note that it must not be a summary of basics (such as: “What is a neural network?”) but precisely explain how the methods are used (for example: what kind of network architecture is used for this work, how it is trained, how the hyperparameters are tuned etc.) and why (what are the alternatives?). The description must be detailed enough to allow the reproduction of the results. Assume that the reader is familiar with everything taught in the courses of the data science study program. Standard methods should not be described at all, specialized methods only shortly, and references given.
 
-
+\section{End-to-end Pipeline}
+\autoref{fig:methodological-pipeline} summarizes the pipeline used in this thesis. Water level and meteorological data are fetched from the respective sources and are preprocessed independently. The data are then chronologically split into training and test sets. Feature engineering is performed separately on both the training and test set to avoid data leakage. Forecasting models are trained and evaluated using expanding window \ac{CV} on the training set. Model selection is solely based on the \ac{CV} results, the test set is only used for the final evaluation of the selected model. 
+\input{figures/methodological_pipeline.tex}
 \section{Water Level Data}
 The main data source for the thesis is the FloodAlert water level data \cite{FloodAlertWaterLevels}. To limit the scope of the thesis a single station is selected as the forecasting target. The target station is on the Danube and located in Korneuburg (a suburb of Vienna). The main reasons for selecting this station are the availability and quality of the data, as well as its popularity 
 (measured by notification subscribers). % TODO Check with Johannes if I can include that
