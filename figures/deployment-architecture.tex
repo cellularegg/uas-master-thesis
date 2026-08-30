@@ -1,0 +1,87 @@
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+    font=\small,
+    >=Latex,
+    box/.style={
+      draw,
+      rounded corners,
+      align=center,
+      minimum width=4.8cm,
+      minimum height=1.0cm
+    },
+    smallbox/.style={
+      draw,
+      rounded corners,
+      align=center,
+      text width=3.5cm,
+      minimum height=1.5cm
+    },
+    flow/.style={->, thick},
+    line/.style={thick}
+  ]
+
+    % Main entry
+    \node[box] (client)
+      {FloodAlert service\\(regular forecast request)};
+
+    \node[box, below=8mm of client] (api)
+      {Forecast API\\(FastAPI)};
+
+    \draw[flow] (client) --
+    node[midway, right, fill=white, inner sep=2pt]{Request}
+    (api.north);
+      % Parallel data fetching
+    \node[smallbox, below left=18mm and 3mm of api] (water)
+      {Fetch target and upstream\\water level data\\from FloodAlert};
+
+    \node[smallbox, below right=18mm and 3mm of api] (weather)
+      {Fetch weather data\\from GeoSphere INCA};
+
+    % Fork
+    \coordinate (fork) at ($(api.south)+(0,-7mm)$);
+    \coordinate (fork-left) at (water.north |- fork);
+    \coordinate (fork-right) at (weather.north |- fork);
+
+    \draw[flow] (api.south) -- (fork);
+    \draw[line] (fork-left) -- (fork-right);
+    \draw[flow] (fork-left) -- (water.north);
+    \draw[flow] (fork-right) -- (weather.north);
+
+    % Join
+    \coordinate (join) at ($(water.south)!0.5!(weather.south)+(0,-8mm)$);
+    \coordinate (join-left) at (water.south |- join);
+    \coordinate (join-right) at (weather.south |- join);
+
+    \draw[line] (water.south) -- (join-left);
+    \draw[line] (weather.south) -- (join-right);
+    \draw[line] (join-left) -- (join-right);
+
+    % Remaining pipeline
+    \node[box, below=8mm of join] (features)
+      {Preprocessing and\\feature generation};
+
+    \node[box, below=8mm of features] (model)
+      {Load selected XGBoost model\\and run inference};
+
+    \node[box, below=8mm of model] (response)
+      {Return 24-hour water level\\forecast as JSON};
+
+    \draw[flow] (join) -- (features.north);
+    \draw[flow] (features) -- (model);
+    \draw[flow] (model) -- (response);
+
+    % Return line back to FloodAlert
+    \draw[flow] (response.east) -- ++(4.5,0)
+    |- node[pos=0.2, right]{Response} (client.east);
+\end{tikzpicture}
+
+  \caption{Proposed deployment architecture. Upon a request from
+  FloodAlert, the forecasting API retrieves water level observations from
+  FloodAlert and weather observations from GeoSphere INCA.
+  After both requests have completed, the data are preprocessed and transformed
+  into model features before the selected XGBoost model generates the
+  24-hour forecast.}
+
+  \label{fig:deployment-architecture}
+\end{figure}

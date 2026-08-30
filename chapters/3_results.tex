@@ -80,8 +80,13 @@ The heatmap in \autoref{fig:weather-future-change-spearman} shows the Spearman c
   \caption{Aggregate \ac{CV} \ac{RMSE} of all trained models. The marker shows the mean across 5 folds, the error bar shows the standard deviation within the folds.}\label{fig:aggregate-cross-validation-rmse}
 \end{figure}
 \subsection{Model Selection and Test Performance}
+\autoref{tab:sealed-test-performance-all-models} shows the performance of each model on the sealed test set. Based on the \ac{CV} \ac{RMSE} the chosen model is XGBoost. The test-set performance of XGBoost is comparatively worse than its \ac{CV} performance, with an \ac{RMSE} of $13.90$. This performance decrease may partly be explained by a distribution shift between the training and test sets, as the September 2024 flood represents a previously unseen extreme event. Under these conditions, XGBoost appears to generalize less effectively to previously unseen water level ranges than the \ac{MLP} and \ac{RNN} models. The \ac{MLP} achieves a lower test-set \ac{RMSE} ($12.11$) than XGBoost ($13.90$), although the performance of the \ac{MLP} \ac{CV} \ac{RMSE} is higher ($12.64$). Nevertheless, XGBoost remains the selected model because it performed best based on the predefined \ac{CV} criterion. Selecting the \ac{MLP} only because of the better test-set result would mean that the sealed test set is used for model selection instead of only for the final evaluation. Additionally, the better performance of the \ac{MLP} on the test set could also be due to the specific characteristics of this test period and does not necessarily mean that the model generally performs better. Therefore, XGBoost remains the selected model independent of the observed test-set performance.
 % TODO add test set performance of all models and write a short paragraph about it.
-
+\begin{table}[htbp]
+  \centering
+  \input{tables/sealed_test_performance_all_models.tex}
+  \caption{Sealed-test \ac{MAE}, \ac{RMSE} and \ac{ME}, aggregated across the full 24-hour forecast horizon, for every model.}\label{tab:sealed-test-performance-all-models}
+\end{table}
 \section{Feature Effects}
 This section will cover the effects of different feature subsets on the model performance. \autoref{fig:feature-subset-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} for XGBoost across the different feature subsets. All feature subsets are shown in \autoref{tab:feature-subset-definitions}. The worst performance is achieved when only using the target station's measurements without any weather data or upstream stations ($\text{\ac{RMSE}} = 16.76 \pm 1.91$). The best performance is achieved when using all features, however without the engineered features the performance is only slightly worse ($\text{\ac{RMSE}} = 12.90 \pm 1.79$). The engineered features therefore only provide a small improvement in performance. This small improvement suggest that most of the information is already contained in the raw measurements and the engineered features do not add much additional information. Especially not for a model like XGBoost, which is able to learn complex relationships between the features and the target variable. For simpler models like Ridge the engineered features provide a larger improvement in performance,  
 % Investigate feature importance and effects on the model performance
@@ -153,8 +158,7 @@ This section will analyze the forecasts of the best performing model, XGBoost, o
   \caption{Test \ac{MAE}, \ac{RMSE}, and \ac{ME} by water level regime for XGBoost. The $Q_1$--$Q_4$ bounds are derived from training measurements. N counts scored forecast values.}\label{tab:performance-by-water-level-regime}
 \end{table}
 
-
-\autoref{tab:high-water-alarm-level-performance} shows the test set performance of XGBoost for all scored forecasts and where the actual level is above FloodAlert's threshold of 545 cm.
+\autoref{tab:high-water-alarm-level-performance} shows the test set performance of XGBoost for all scored forecasts and where the actual level is above FloodAlert's threshold of 545 cm. The number of observed values in the test set above the threshold is 7,414, which is about 1.72\% of the total scored forecasts. Thus the share of high water events is pretty low. Compared to the overall test set performance, the \ac{RMSE} and \ac{MAE} are significantly higher for the high water events, with a \ac{RMSE} of $71.44$, about a five times increase, and a \ac{MAE} of $53.92$, which is about seven times higher. Although the overall \ac{ME} of $0.5$ indicates little systematic bias across the complete test set, the alarm-level \ac{ME} of $-53.08$ shows that XGBoost systematically underpredicts high water levels. Furthermore the alarm level \ac{MAE} is very close to the absolute \ac{ME}, which indicates that errors in this regime are predominantly underestimations, rather than symmetric errors. 
 \begin{table}[htbp]
   \centering
   \input{tables/high_water_alarm_level_performance.tex}
@@ -163,4 +167,8 @@ This section will analyze the forecasts of the best performing model, XGBoost, o
 
 
 \section{Deployment}
-Deployment (Docker + FastAPI)
+The final step of the data science pipeline is the deployment of the model. The deployment is not implemented in the code, nevertheless this section will describe the proposed deployment architecture and the model can be accessed by FloodAlert, where the forecasted values can be used on the website to show the trend of the water level in the next 24 hours. The model should not be used to send out early warnings, as the chosen model is not able to predict extreme water levels accurately. 
+
+The two main components of the deployment architecture are Docker and FastAPI. Docker serves as a containerization platform that allows the model and its dependencies to be packaged into a single, portable unit. FastAPI is used to create a RESTful API that exposes the the prediction functionality of the model to the FloodAlert service. Since FloodAlert already regularly fetches the latest water level measurements, the model can be deployed as a separate service that is called by FloodAlert on a regular basis. 
+
+\input{figures/deployment-architecture.tex}
