@@ -5,20 +5,23 @@
     >=Latex,
     box/.style={
       draw,
-      rounded corners,
+      rounded corners=2pt,
       align=center,
       minimum width=4.8cm,
-      minimum height=1.0cm
+      minimum height=1.0cm,
+      fill=gray!12
     },
     smallbox/.style={
       draw,
-      rounded corners,
+      rounded corners=2pt,
       align=center,
       text width=3.5cm,
-      minimum height=1.5cm
+      minimum height=1.5cm,
+      fill=gray!20
     },
-    flow/.style={->, thick},
-    line/.style={thick}
+    flow/.style={->, line width=0.6pt},
+    line/.style={line width=0.6pt},
+    every path/.style={line width=0.6pt}
   ]
 
     % Main entry
@@ -62,7 +65,7 @@
       {Preprocessing and\\feature generation};
 
     \node[box, below=8mm of features] (model)
-      {Load selected XGBoost model\\and run inference};
+      {Load selected (XGBoost) model\\and run inference};
 
     \node[box, below=8mm of model] (response)
       {Return 24-hour water level\\forecast as JSON};
@@ -78,9 +81,9 @@
 
   \caption{Proposed deployment architecture. Upon a request from
   FloodAlert, the forecasting API retrieves water level observations from
-  FloodAlert and weather observations from GeoSphere INCA.
+  FloodAlert and weather observations from GeoSphere.
   After both requests have completed, the data are preprocessed and transformed
-  into model features before the selected XGBoost model generates the
+  into model features before the selected (XGBoost) model generates and returns the
   24-hour forecast.}
 
   \label{fig:deployment-architecture}
