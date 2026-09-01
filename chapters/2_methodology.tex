@@ -27,56 +27,56 @@ Each station provides at most two features: water level and flow rate. Since not
         Korneuburg &
         \texttt{207241-at} &
         Korneuburg, Lower Austria &
-        1941.46 &
+        $1941.46$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207241-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://www.noe.gv.at/wasserstand/\#/en/Messstellen/Details/207241/Wasserstand/3Tage}{Link} \cite{WasserstandsnachrichtenUndHochwasserprognosen} \\
 
         Kienstock &
         \texttt{207357-at} &
         Rossatz-Arnsdorf, Lower Austria (Wachau) &
-        2015.21 &
+        $2015.21$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207357-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://www.noe.gv.at/wasserstand/\#/de/Messstellen/Details/207357/Wasserstand/3Tage}{Link} \cite{WasserstandsnachrichtenUndHochwasserprognosen} \\
 
         Grein (Schiffsstation) &
         \texttt{207100-at} &
         Grein, Upper Austria &
-        2079.10 &
+        $2079.10$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207100-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16670/Grein+\%28Schiffsstation\%29/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
 
         Mauthausen &
         \texttt{207084-at} &
         Mauthausen, Upper Austria &
-        2110.98 &
+        $2110.98$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207084-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16669/Mauthausen/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
 
         Linz &
         \texttt{207068-at} &
         Linz, Upper Austria &
-        2135.17 &
+        $2135.17$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207068-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16668/Linz/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
 
         Wilhering &
         \texttt{207340-at} &
         Wilhering, Upper Austria &
-        2144.04 &
+        $2144.04$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207340-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16671/Wilhering/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
 
         Engelhartszell &
         \texttt{207027-at} &
         Engelhartszell, Upper Austria &
-        2200.66 &
+        $2200.66$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207027-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16665/Engelhartszell/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
 
         Achleiten &
         \texttt{207019-at} &
         Freinberg, Upper Austria &
-        2223.05 &
+        $2223.05$ &
         \href{https://pegelalarm.at/paw/?initHideSms=true\&commonid=207019-at}{Link} \cite{FloodAlertWaterLevels} &
         \href{https://hydro.ooe.gv.at/\#/overview/Wasserstand/station/16664/Achleiten/Wasserstand?period=P7D}{Link} \cite{HydrographischerDienstOberosterreich} \\
         \bottomrule 
@@ -224,7 +224,7 @@ The full \ac{CV} is done for each model, hyperparameter configuration, and featu
 
 Only the RNN is not trained on all feature subsets. Instead, it is trained exclusively on the raw all-stations feature subset. This choice is made both to reduce the computational cost and training time and because the RNN is specifically designed to learn temporal dependencies directly from sequences of past observations. Except for ridge regression all models are tuned using randomized grid search. \cite{bergstraRandomSearchHyperParameter2012, feurerHyperparameterOptimization2019}
 
-MlFlow is used to manage the experiments and track the results. After the \ac{CV} the best model is selected based on the mean \ac{RMSE} across all folds.
+MLflow is used to manage the experiments and track the results. After the \ac{CV} the best model is selected based on the mean \ac{RMSE} across all folds.
 % TODO GRID SEARCH + Randomized grid search
 
 

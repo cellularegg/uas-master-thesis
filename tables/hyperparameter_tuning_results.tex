@@ -2,16 +2,16 @@
 \toprule
 \textbf{Model} & \textbf{Selected feature subset} & \textbf{Selected hyperparameters} & \textbf{CV RMSE} \\
 \midrule
-XGBoost & Full & depth=3, learning\_rate=0.034558 & 12.43 \\
+XGBoost & Full & depth=$3$, learning\_rate=$0.034558$ & $12.43$ \\
 \addlinespace
-RNN & Raw all stations & cell=gru, sequence\_length=24 & 12.57 \\
+RNN & Raw all stations & cell=gru, sequence\_length=$24$ & $12.57$ \\
 \addlinespace
-MLP & Full & layers=128, alpha=0.410556 & 12.64 \\
+MLP & Full & layers=$128$, alpha=$0.410556$ & $12.64$ \\
 \addlinespace
-Extra Trees & Raw all stations & depth=16, n\_estimators=375, min\_leaf=1, max\_features=1.0 & 13.27 \\
+Extra Trees & Raw all stations & depth=$16$, n\_estimators=$375$, min\_leaf=$1$, max\_features=$1.0$ & $13.27$ \\
 \addlinespace
-Ridge & Full & alpha=0.01, log1p=False & 13.32 \\
+Ridge & Full & alpha=$0.01$, log1p=False & $13.32$ \\
 \addlinespace
-Persistence & Not applicable & Not applicable & 18.13 \\
+Persistence & Not applicable & Not applicable & $18.13$ \\
 \bottomrule
 \end{tabularx}
