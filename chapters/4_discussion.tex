@@ -1,17 +1,36 @@
 \chapter{Discussion}
+% A particularly important chapter is the discussion of the approach and the results. The aim here is to critically investigate the quality of your solution: what are the potentials, and more importantly, what are the limitations? How do your findings relate to previous work? To what extent will your results generalize? In essence: what is the impact of your work?
+
 
 
 \section{Main findings}
+% Shortly summarize your main findings by answering each research question in turn.
+\textbf{\ac{RQ}1: Which forecasting approach provides the best predictive performance for short-term water level forecasting given the available data?}
+
+
+\textbf{\ac{RQ}2: How does incorporating data from neighboring stations and weather information affect forecast performance?}
+
+
+\textbf{\ac{RQ}3: How does forecast performance vary with lead time and across different water level regimes?}
 
 
 \section{Comparison with previous work}
+% An important part of this chapter is the comparison with existing solutions and approaches found in the literature. How do the findings of the thesis relate to existing approaches? Are the results plausible? Is the proposed solution better than existing approaches?
+
 
 
 \section{Implications}
+% Also, you should assess impacts on society and/or the company (whatever applies) – positive and negative ones. This could include benefits such as organizational improvements (cost reductions), increased benefits (for new business models), or threats such as loss of jobs, increase of faked information, biases in automated information handling, loss of privacy, legal/ethical issues, etc.
+
 
 
 \section{Limitations}
+% Weaknesses in the methodology should be listed (e.g., sample sizes, data quality, limited choice of models, non-systematic hyperparameter tuning, incomplete implementation of the deployment, performance limitations etc.) and the impact on the solution be discussed. Also, possible improvements should be suggested. It is mandatory to comment on possible bias in data and/or models (e.g., gender, ethnicity …).
+
+
 % XGBoost can natively handle missing values, but the other models cannot. The final selected model has not been retrained on the full training set (including nulls).
+
+% Single target station only 
 
 \section{Further Research}
 % Ideas: Compare Transformer models e.g. Temporal Fusion Transformer (TFT). Add not only the upstream rivers from the same river but also upstream rivers that merge into the target river. Compare the performance of different models on different rivers.
