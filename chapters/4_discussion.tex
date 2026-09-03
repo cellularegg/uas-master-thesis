@@ -5,12 +5,12 @@
 
 \section{Main findings}
 % Shortly summarize your main findings by answering each research question in turn.
-\textbf{\ac{RQ}1: Which forecasting approach provides the best predictive performance for short-term water level forecasting given the available data?}
-
-
-\textbf{\ac{RQ}2: How does incorporating data from neighboring stations and weather information affect forecast performance?}
-
-
+\textbf{\ac{RQ}1: Which forecasting approach provides the best predictive performance for short-term water level forecasting given the available data?}\\
+XGBoost achieves the best \ac{CV} \ac{RMSE} with a value of $12.43$ cm, slightly outperforming other models like \ac{RNN} or \ac{MLP}. Furthermore, XGBoost has the lowest standard deviation of \ac{RMSE} across the \ac{CV} folds. However, on the sealed test set XGBoost does not achieve the lowest \ac{RMSE}, but the \ac{MLP} model does, with an \ac{RMSE} of $12.11$ cm compared to $13.90$ cm for XGBoost. Nevertheless, XGBoost is selected as the final model, since the model selection is based on \ac{CV} performance and not on the sealed test set performance. Selecting another model based on the sealed test set would mean that the test set is used for model selection instead of only for the final evaluation. The better performance of the \ac{MLP} and \ac{RNN} indicates that these models generalized better than XGBoost to this particular test period, which includes previously unseen extreme water levels. However, based on a single test period it cannot be concluded that neural network models generally perform better than tree-based models for unseen extreme events. Therefore, based on the predefined model-selection criterion, XGBoost provides the best predictive performance, although the \ac{MLP} achieves the best performance on the sealed test set.
+\\ \\
+\textbf{\ac{RQ}2: How does incorporating data from neighboring stations and weather information affect forecast performance?}\\
+The target station alone feature subset achieves the worst \ac{CV} \ac{RMSE} across the models evaluated on different feature subsets. The addition of neighboring stations and weather information improves the \ac{CV} \ac{RMSE} across these models. For XGBoost the \ac{CV} \ac{RMSE} improves by about $25\%$ from $16.76$ cm (just the target station) to $12.43$ cm (all features). When just looking at either upstream stations or weather information, the upstream stations lead to a larger improvement in \ac{CV} \ac{RMSE} than the weather information alone, with an improvement of $12.7\%$ compared to $6.5\%$ for XGBoost. The combination of both upstream stations and weather information leads to the best performance, indicating that both sources provide additional predictive information. The improved performance from including upstream stations indicates that their water level measurements contain relevant information about future water levels at the target station, likely because changes in water level propagate downstream. Furthermore, the additional improvement from weather information indicates that it provides information that is not captured by the upstream stations alone. Therefore, it is beneficial to include both upstream stations and weather information for short-term water level forecasting.
+\\ \\
 \textbf{\ac{RQ}3: How does forecast performance vary with lead time and across different water level regimes?}
 
 
@@ -22,11 +22,10 @@
 \section{Implications}
 % Also, you should assess impacts on society and/or the company (whatever applies) – positive and negative ones. This could include benefits such as organizational improvements (cost reductions), increased benefits (for new business models), or threats such as loss of jobs, increase of faked information, biases in automated information handling, loss of privacy, legal/ethical issues, etc.
 
-
+% Sending out future alters should be done with caution.
 
 \section{Limitations}
 % Weaknesses in the methodology should be listed (e.g., sample sizes, data quality, limited choice of models, non-systematic hyperparameter tuning, incomplete implementation of the deployment, performance limitations etc.) and the impact on the solution be discussed. Also, possible improvements should be suggested. It is mandatory to comment on possible bias in data and/or models (e.g., gender, ethnicity …).
-
 
 % XGBoost can natively handle missing values, but the other models cannot. The final selected model has not been retrained on the full training set (including nulls).
 
@@ -34,3 +33,4 @@
 
 \section{Further Research}
 % Ideas: Compare Transformer models e.g. Temporal Fusion Transformer (TFT). Add not only the upstream rivers from the same river but also upstream rivers that merge into the target river. Compare the performance of different models on different rivers.
+% Use different models for different regimes. 
