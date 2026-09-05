@@ -122,10 +122,10 @@ The feature engineering step creates additional features from the preprocessed d
   \item Change features: Differences between current and past water levels.
   \item Rolling statistics: Mean, standard deviation, and other summary statistics over a rolling window.
   \item Weather summaries: Aggregated weather data over a rolling window, such as total precipitation or average temperature.
-  \item Quality indicators: Number of imputed values in the past x hours
-  \item Calendar features: Encoding of the timestamp into features such as hour of the day, day of the week.
+  \item Quality indicators: Number of imputed values in the preceding $x$ hours.
+  \item Calendar features: Encoding of the timestamp into features such as the hour of the day and day of the week.
 \end{enumerate}
-To not explode the feature space only the target station gets the additional features calculated. Other upstream stations only provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}.\todo{remove 168 h windows} To prevent data leakage, the feature engineering is performed separately on the training and test datasets. For \ac{CV} data leakage is not an issue, since expanding window \ac{CV} is used, see \autoref{sec:experimental-design}.
+To keep the feature space manageable, the additional lagged, change, rolling, and calendar features are calculated only for the target station. The upstream stations provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}. To prevent data leakage, feature engineering is performed separately on the training and test datasets. For \ac{CV}, data leakage is avoided by applying expanding-window \ac{CV}, as described in \autoref{sec:experimental-design}.
 \begin{table}[htbp]
     \centering
     \begin{tabularx}{\textwidth}{@{}lXl@{}}
@@ -134,7 +134,7 @@ To not explode the feature space only the target station gets the additional fea
         \midrule
         Water level lags
         & Lagged water level observations
-        & 1, 3, 6, 12, 24, 48, 72, 168 h \\
+        & 1, 3, 6, 12, 24, 48, 72 h \\
         \addlinespace
         Water level changes
         & Difference between the current water level and a previous observation
@@ -142,19 +142,19 @@ To not explode the feature space only the target station gets the additional fea
         \addlinespace
         Rolling water level statistics
         & Rolling mean, standard deviation, minimum, and maximum of the water level
-        & 6, 24, 72, 168 h \\
+        & 6, 24, 72 h \\
         \addlinespace
         Imputation history
         & Number of imputed water level observations within the preceding window
-        & 6, 24, 72, 168 h \\
+        & 6, 24, 72 h \\
         \addlinespace
         Precipitation history
         & Rolling sum of precipitation
-        & 6, 24, 72, 168 h \\
+        & 6, 24, 72 h \\
         \addlinespace
         Temperature history
         & Rolling mean of air temperature
-        & 6, 24, 72, 168 h \\
+        & 6, 24, 72 h \\
         \addlinespace
         Temperature extrema
         & Rolling minimum and maximum of air temperature
@@ -169,7 +169,7 @@ To not explode the feature space only the target station gets the additional fea
 \end{table}
 The final step of the feature engineering is to add a target column for each hour of the forecast horizon. This makes it possible to train and test the models based on the entire forecast horizon. Additionally, a check is performed to ensure that all target values are valid, i.e. neither missing nor imputed. If any of the target values are invalid, the flag is set to false and the sample is subsequently excluded from model training and evaluation.
 
-This results in a final dataset with 81\todo{update} features. 53\todo{update to match new features} features are calculated from the target station plus four features for each of the seven upstream stations. 
+The resulting input matrix contains 73 predictor features: 45 features are derived from the target station and four features are provided by each of the seven upstream stations.
 \section{Forecasting Strategy}
 The general approach is to use a \ac{MIMO} strategy. This means that a single model predicts multiple future time steps at once, rather than using a recursive strategy where the model predicts one time step at a time and feeds the prediction back into the model for the next time step. The \ac{MIMO} strategy is chosen to mitigate the error accumulation that can occur with recursive strategies \cite{bentaiebReviewComparisonStrategies2012}. \autoref{eq:mimo-forecasting} shows the concept of a \ac{MIMO} forecasting model, where $X_t$ is the input data at time $t$, $\hat{y}_{t+x}$ is the predicted water level at time $t+x$, and $H$ is the forecast horizon. The forecast horizon is set to 24 hours.
 \begin{equation}
