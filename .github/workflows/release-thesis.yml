@@ -1,0 +1,46 @@
+name: Build and release thesis PDF
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Compile LaTeX document
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: main.tex
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+
+      - name: Name PDF after thesis title
+        id: pdf
+        shell: bash
+        run: |
+          title="$(sed -n 's/^[[:space:]]*\\title{\(.*\)}[[:space:]]*$/\1/p' main.tex | head -n 1)"
+
+          if [[ -z "$title" ]]; then
+            echo "Could not find the thesis title in main.tex" >&2
+            exit 1
+          fi
+
+          pdf_name="${title}.pdf"
+          mv main.pdf "$pdf_name"
+          echo "name=$pdf_name" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ${{ steps.pdf.outputs.name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
