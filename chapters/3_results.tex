@@ -19,20 +19,22 @@ As seen in \autoref{fig:target-water-level-history} there is quite some variabil
   \caption{Daily maximum water level at station 207241-at (in Korneuburg) over the full available period with weekly precipitation totals and the train/test split.}\label{fig:target-water-level-history}
 \end{figure}
 
-\autoref{fig:target-water-level-distribution} shows the distribution of observed hourly water levels at the target station. The distribution is right-skewed, with a long tail towards higher water levels. The first quartile is at 229 cm, the median is at 262 cm, and the third quartile is at 310 cm. The alarm threshold of 545 cm is far above the third quartile; values above the threshold are rare, with only 760 observations ($0.75\%$ of the total) exceeding the threshold.
-% \autoref{fig:target-water-level-distribution}: Number of observations above alarm threshold: 760 (0.75%) Quartiles: Q1=229.00, Q2=262.00, Q3=310.00
+\autoref{fig:target-water-level-distribution} shows the distribution of observed hourly water levels at the target station. The distribution is right-skewed, with a long tail towards higher water levels. The first quartile is at 229 cm, the median is at 261 cm, and the third quartile is at 309 cm. The alarm threshold of 545 cm is far above the third quartile; values above the threshold are rare, with only 760 observations ($0.76\%$ of the total) exceeding the threshold.
+% Number of observations above alarm threshold: 752 (0.76%) Quartiles: Q1=229.00, Q2=261.00, Q3=309.00
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/target_water_level_distribution.pdf}
-  \caption{Distribution of observed hourly water levels at the target station.}\label{fig:target-water-level-distribution}
+  \caption{Distribution of directly observed hourly water levels at the target station, excluding imputed values.}\label{fig:target-water-level-distribution}
 \end{figure}
+
 
 
 \autoref{fig:station-monthly-data-completeness} outlines the monthly availability of water level measurements across all eligible stations, as well as the proportion of rows that are eligible for use in the model. 207340-at, 207027-at and 207019-at have a later start date than the other stations; they are missing all measurements before mid 2015. Overall the availability of water level measurements is quite good, with the lowest availability being about 89\%. There are also some patterns in the missingness of the data. For example, in late 2015 and early 2016 there are some months with lower availability of the same three stations. The reason could be that there was an issue at the measurement station operator's side, or that FloodAlert was not able to fetch the data for some other reason (e.g. an outage of their system). The proportion of rows that are eligible for use in the model training is comparatively low, since it requires that all features are available. This is due to several factors, the first one being that the target must not be null for the entire 24 hour forecast horizon. A single null value in the target will make the many rows ineligible. Furthermore, all features must not be null for the row to be eligible. Nevertheless the total number of eligible rows is still quite high with about 70,000 rows.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/station_monthly_data_completeness.pdf}
-  \caption{Monthly available water level measurements and eligible rows for upstream stations (interpolated measurements count as missing).}\label{fig:station-monthly-data-completeness}
+  \caption{Monthly available water level measurements and eligible rows for upstream stations (imputed measurements count as missing).}\label{fig:station-monthly-data-completeness}
 \end{figure}
 
 
@@ -46,9 +48,10 @@ The Pearson cross-correlation between upstream stations and the target station f
 The heatmap in \autoref{fig:weather-future-change-spearman} shows the Spearman correlation between precipitation sums, temperature means and subsequent water level changes at the target station. There is virtually no linear correlation between the temperature and future water level changes, with the highest correlation being $0.04$ showing no monotonic relationship between the mean temperature and the future water level changes. The precipitation sums show a larger weak correlation with future water level changes, with the highest correlation being $0.26$. Increased precipitation over the previous 6 and 24 hours is associated with the strongest subsequent water level changes  12 or 24 hours later. The correlation pattern suggests a delayed association between recent precipitation and water level changes. The weak negative correlation for the 72-hour precipitation sum at the 48-hour horizon may indicate that the water level has already risen due to earlier rainfall and is beginning to fall again. Additionally, the long 72-hour window makes it difficult to determine when exactly the precipitation occurred.
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{figures/weather_future_change_spearman.pdf}
-  \caption{Spearman correlations between precipitation sums / temperature means and future water level changes at the target station.}\label{fig:weather-future-change-spearman}
+  \includegraphics[width=\textwidth]{figures/weather_future_change_pearson.pdf}
+  \caption{Pearson correlations between precipitation sums or temperature means and future water level changes at the target station.}\label{fig:weather-future-change-pearson}
 \end{figure}
+
 
 \newpage % TODO REMOVE
 
@@ -125,13 +128,15 @@ This section analyzes the forecasts of the best performing model, XGBoost, on th
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/xgboost_best_forecast_window.pdf}
-  \caption{Selected best 24-hour XGBoost forecast on the sealed test set, shown against the observed target-station water level.}\label{fig:xgboost-best-forecast-window}
+  \caption{Lowest \ac{RMSE} 24-hour XGBoost forecast among sealed-test issue times with complete, non-imputed target-station observations from 48 hours before to 48 hours after issue time.}\label{fig:xgboost-best-forecast-window}
 \end{figure}
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/xgboost_worst_forecast_window.pdf}
-  \caption{Worst 24-hour XGBoost forecast on the sealed test set, with the observed target station water level.}\label{fig:xgboost-worst-forecast-window}
+  \caption{Highest \ac{RMSE} 24-hour XGBoost forecast among sealed-test issue times with complete, non-imputed target-station observations from 48 hours before to 48 hours after issue time.}\label{fig:xgboost-worst-forecast-window}
 \end{figure}
+
 
 \autoref{fig:xgboost-h1-forecast-timeline} shows the H+1 forecast of the XGBoost model against the observed water level at the target station from 2024-09-10 to 2024-09-22. This is the flood period in September 2024, which exceeds the highest water level in the training set. It can be clearly seen that the model is struggling to predict those extreme water levels above 600 cm accurately. The forecasted values barely exceed 600 cm, while the actual water level reaches water levels above 700 cm.
 
@@ -162,7 +167,7 @@ This section analyzes the forecasts of the best performing model, XGBoost, on th
 \begin{table}[htbp]
   \centering
   \input{tables/high_water_alarm_level_performance.tex}
-  \caption{Test set performance of XGBoost for all scored forecasts and where the actual level is above FloodAlert's threshold (545 cm). N denotes scored forecasts.}\label{tab:high-water-alarm-level-performance}
+  \caption{Test set performance of XGBoost for all scored forecasts and where the actual level is at or above FloodAlert's threshold (545 cm). N denotes scored forecasts.}\label{tab:high-water-alarm-level-performance}
 \end{table}
 
 
