@@ -8,38 +8,38 @@
 
     % Fold 1
     \node[anchor=east] at (0,0) {Fold 1};
-    \draw[fill=gray!20] (0,-0.25) rectangle (4.0,0.25);
-    \node at (2.0,0) {Training};
-    \draw[fill=gray!45] (4.2,-0.25) rectangle (5.0,0.25);
-    \node at (4.6,0) {\scriptsize Val.};
+    \draw[fill=gray!20] (0,-0.25) rectangle (3.80,0.25);
+    \node at (1.90,0) {Training};
+    \draw[fill=gray!45] (4.00,-0.25) rectangle (4.80,0.25);
+    \node at (4.40,0) {\scriptsize Val.};
 
     % Fold 2
     \node[anchor=east] at (0,-1) {Fold 2};
-    \draw[fill=gray!20] (0,-1.25) rectangle (4.7,-0.75);
-    \node at (2.35,-1) {Training};
-    \draw[fill=gray!45] (4.9,-1.25) rectangle (5.7,-0.75);
-    \node at (5.3,-1) {\scriptsize Val.};
+    \draw[fill=gray!20] (0,-1.25) rectangle (4.60,-0.75);
+    \node at (2.30,-1) {Training};
+    \draw[fill=gray!45] (4.80,-1.25) rectangle (5.60,-0.75);
+    \node at (5.20,-1) {\scriptsize Val.};
 
     % Fold 3
     \node[anchor=east] at (0,-2) {Fold 3};
-    \draw[fill=gray!20] (0,-2.25) rectangle (5.4,-1.75);
-    \node at (2.7,-2) {Training};
-    \draw[fill=gray!45] (5.6,-2.25) rectangle (6.4,-1.75);
-    \node at (6.0,-2) {\scriptsize Val.};
+    \draw[fill=gray!20] (0,-2.25) rectangle (5.40,-1.75);
+    \node at (2.70,-2) {Training};
+    \draw[fill=gray!45] (5.60,-2.25) rectangle (6.40,-1.75);
+    \node at (6.00,-2) {\scriptsize Val.};
 
     % Fold 4
     \node[anchor=east] at (0,-3) {Fold 4};
-    \draw[fill=gray!20] (0,-3.25) rectangle (6.1,-2.75);
-    \node at (3.05,-3) {Training};
-    \draw[fill=gray!45] (6.3,-3.25) rectangle (7.1,-2.75);
-    \node at (6.7,-3) {\scriptsize Val.};
+    \draw[fill=gray!20] (0,-3.25) rectangle (6.20,-2.75);
+    \node at (3.10,-3) {Training};
+    \draw[fill=gray!45] (6.40,-3.25) rectangle (7.20,-2.75);
+    \node at (6.80,-3) {\scriptsize Val.};
 
     % Fold 5
     \node[anchor=east] at (0,-4) {Fold 5};
-    \draw[fill=gray!20] (0,-4.25) rectangle (7.0,-3.75);
-    \node at (3.5,-4) {Training};
-    \draw[fill=gray!45] (7.2,-4.25) rectangle (8.0,-3.75);
-    \node at (7.6,-4) {\scriptsize Val.};
+    \draw[fill=gray!20] (0,-4.25) rectangle (7.00,-3.75);
+    \node at (3.50,-4) {Training};
+    \draw[fill=gray!45] (7.20,-4.25) rectangle (8.00,-3.75);
+    \node at (7.60,-4) {\scriptsize Val.};
 
     % Total split
     \node[anchor=east] at (0,-5.3) {\textbf{Total}};
@@ -58,6 +58,6 @@
 
     \end{tikzpicture}
 
-    \caption{Expanding window \ac{CV} with five folds, where the first fold uses 50\% of the training data for training and each validation set contains 10\% of the training data.}
+    \caption{Schematic overview of expanding window \ac{CV} with five folds. The first fold uses about 50\% of the training data for training and each validation set contains about 10\%. Validation sets do not overlap. The 24-hour gap between training and validation is enlarged for visibility.}
     \label{fig:expanding-window-cv}
 \end{figure}
