@@ -147,9 +147,15 @@
 The source code used in this thesis is available at: \url{https://github.com/cellularegg/uas-master-thesis-code}.
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\textwidth]{figures/xgboost_actual_vs_predicted_by_horizon.pdf}
-  \caption{Actual versus predicted water level on the sealed test set for the XGBoost model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:xgboost-actual-vs-predicted-by-horizon}
+  \includegraphics[width=\textwidth]{figures/mlp_actual_vs_predicted_by_horizon.pdf}
+  \caption{Actual versus predicted water level on the sealed test set for the MLP model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:mlp-actual-vs-predicted-by-horizon}
 \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/ridge_actual_vs_predicted_by_horizon.pdf}
+  \caption{Actual versus predicted water level on the sealed test set for the Ridge model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:ridge-actual-vs-predicted-by-horizon}
+\end{figure}
+
 
 \section{Hyperparameter Search Spaces}
 \label{sec:hyperparameter-search-spaces}
@@ -211,14 +217,8 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \label{sec:feature-subset-performance-comparison}
 \begin{table}[htbp]
   \centering
-  \input{tables/feature_subset_performance_comparison_ridge.tex}
-  \caption{\ac{CV} \ac{RMSE} for Ridge for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-ridge}
-\end{table}
-
-\begin{table}[htbp]
-  \centering
-  \input{tables/feature_subset_performance_comparison_mlp.tex}
-  \caption{\ac{CV} \ac{RMSE} for MLP for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-mlp}
+  \input{tables/feature_subset_performance_comparison_xgboost.tex}
+  \caption{\ac{CV} \ac{RMSE} for XGBoost for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-xgboost}
 \end{table}
 
 \begin{table}[htbp]

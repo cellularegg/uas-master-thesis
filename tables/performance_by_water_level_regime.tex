@@ -1,13 +1,21 @@
-\begin{tabularx}{\textwidth}{@{}lXrrrr@{}}
+\begin{tabularx}{\textwidth}{@{}llXrrrr@{}}
 \toprule
-\textbf{Regime} & \textbf{Water level range} & \textbf{N forecast values} & \textbf{MAE} & \textbf{RMSE} & \textbf{ME} \\
+\textbf{Model} & \textbf{Regime} & \textbf{Water level range} & \textbf{N forecast values} & \textbf{MAE} & \textbf{RMSE} & \textbf{ME} \\
 \midrule
-$Q_1$ & $(-\infty, 234]$ & $189{,}780$ & $4.46$ & $6.03$ & $2.56$ \\
+MLP & $Q_1$ & $(-\infty, 234]$ & $189{,}780$ & $4.72$ & $6.55$ & $2.63$ \\
 \addlinespace
-$Q_2$ & $(234, 267]$ & $93{,}612$ & $5.46$ & $7.58$ & $1.56$ \\
+ & $Q_2$ & $(234, 267]$ & $93{,}612$ & $5.95$ & $8.24$ & $2.42$ \\
 \addlinespace
-$Q_3$ & $(267, 314]$ & $75{,}623$ & $7.61$ & $11.01$ & $1.90$ \\
+ & $Q_3$ & $(267, 314]$ & $75{,}623$ & $8.24$ & $11.62$ & $3.86$ \\
 \addlinespace
-$Q_4$ & $(314, \infty)$ & $71{,}497$ & $16.54$ & $29.37$ & $-7.84$ \\
+ & $Q_4$ & $(314, \infty)$ & $71{,}497$ & $13.45$ & $23.18$ & $-2.73$ \\
+\addlinespace
+Ridge & $Q_1$ & $(-\infty, 234]$ & $189{,}780$ & $5.25$ & $7.38$ & $0.89$ \\
+\addlinespace
+ & $Q_2$ & $(234, 267]$ & $93{,}612$ & $6.27$ & $8.74$ & $2.93$ \\
+\addlinespace
+ & $Q_3$ & $(267, 314]$ & $75{,}623$ & $7.70$ & $11.07$ & $2.22$ \\
+\addlinespace
+ & $Q_4$ & $(314, \infty)$ & $71{,}497$ & $14.58$ & $24.91$ & $-4.20$ \\
 \bottomrule
 \end{tabularx}

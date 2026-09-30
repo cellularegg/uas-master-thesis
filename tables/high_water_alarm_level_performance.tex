@@ -1,13 +1,13 @@
-\begin{tabular}{@{}lrr@{}}
+\begin{tabular}{@{}llrrrr@{}}
 \toprule
-\textbf{Metric} & \textbf{All test observations} & \textbf{Alarm-level observations} \\
+\textbf{Model} & \textbf{Observations} & \textbf{N} & \textbf{MAE} & \textbf{RMSE} & \textbf{ME} \\
 \midrule
-N & $430{,}512$ & $7{,}414$ \\
+MLP & All test & $430{,}512$ & $7.05$ & $12.11$ & $1.91$ \\
 \addlinespace
-MAE & $7.24$ & $53.92$ \\
+ & Alarm-level & $7{,}414$ & $32.08$ & $47.33$ & $-23.51$ \\
 \addlinespace
-RMSE & $13.90$ & $71.44$ \\
+Ridge & All test & $430{,}512$ & $7.45$ & $12.85$ & $0.72$ \\
 \addlinespace
-ME & $0.50$ & $-53.08$ \\
+ & Alarm-level & $7{,}414$ & $30.49$ & $47.92$ & $-14.09$ \\
 \bottomrule
 \end{tabular}
