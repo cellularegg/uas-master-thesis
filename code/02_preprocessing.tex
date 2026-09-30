@@ -1,0 +1,138 @@
+\section{02\_preprocessing.ipynb}
+
+\begin{minted}{python}
+RAW_DIR = Path("data/raw")
+PROCESSED_DIR = Path("data/processed")
+SEPARATE_DIR = PROCESSED_DIR / "separate"
+JOINED_DIR = PROCESSED_DIR / "joined"
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+\end{minted}
+
+\begin{minted}{python}
+latest_station = None
+complete_by_station = {}
+failures = {}
+
+for station_id in tqdm(STATION_IDS, desc="Preprocessing", unit="station"):
+    try:
+        station = preprocess_station(
+            station_id,
+            raw_dir=RAW_DIR,
+            max_gap_hours=MAX_INTERPOLATION_GAP_HOURS,
+            weather_variables=WEATHER_VARIABLES,
+        )
+        complete_by_station[station_id] = station
+        print(f"Preprocessed {len(station):,} hourly rows for {station_id}")
+        latest_station = station
+    except Exception as error:  # noqa: BLE001 -- aggregate every station failure
+        failures[station_id] = error
+        print(f"Failed {station_id}: {error}")
+
+if latest_station is not None:
+    latest_station.info()
+    display(latest_station.head())
+else:
+    print("No preprocessed DataFrame is available to display.")
+\end{minted}
+
+\begin{minted}{python}
+if failures:
+    raise RuntimeError(summarize_failures(failures))
+
+print("Preprocessing completed successfully.")
+\end{minted}
+
+\begin{minted}{python}
+retained_by_station, coverage_report = filter_station_frames_by_target_range_overlap(
+    complete_by_station,
+    target_station_id=TARGET_STATION_ID,
+    min_overlap_fraction=MIN_TARGET_RANGE_OVERLAP,
+)
+coverage_table = pd.DataFrame(coverage_report)
+display(coverage_table)
+retained_station_ids = list(retained_by_station)
+rejected_station_count = len(coverage_report) - len(retained_station_ids)
+print(
+    f"Retained {len(retained_station_ids)} stations; "
+    f"rejected {rejected_station_count} stations"
+)
+
+# Every station is cut at one boundary: the target station's own chronological
+# split. Splitting each station at its own floor((1-test_fraction)*N) instead
+# lands the boundaries on different hours, because the timelines differ in
+# length, and the rows in between are dropped by the joined completeness gate.
+train_by_station, test_by_station, split_boundary_utc = (
+    split_station_frames_at_target_boundary(
+        retained_by_station,
+        target_station_id=TARGET_STATION_ID,
+        test_fraction=TEST_FRACTION,
+    )
+)
+print(f"Shared split boundary (last training hour): {split_boundary_utc.isoformat()}")
+
+for station_id in retained_station_ids:
+    write_preprocess_artifacts(
+        train_by_station[station_id],
+        test_by_station[station_id],
+        station_id=station_id,
+        output_dir=SEPARATE_DIR,
+        split_boundary_utc=split_boundary_utc,
+        test_fraction=TEST_FRACTION,
+    )
+    print(
+        f"Saved {len(train_by_station[station_id]):,} train and "
+        f"{len(test_by_station[station_id]):,} test rows for {station_id}"
+    )
+\end{minted}
+
+\begin{minted}{python}
+station_catalog = pd.read_parquet(
+    RAW_DIR / f"pegelalarm_stations_{COUNTRY_CODE.lower()}.parquet"
+)
+station_order, station_distances = order_stations_by_target_distance(
+    station_catalog,
+    target_station_id=TARGET_STATION_ID,
+    station_ids=retained_station_ids,
+)
+print(
+    "Join order (nearest upstream station first): "
+    + " -> ".join(
+        f"{station_id} ({station_distances[station_id]:.1f} km)"
+        for station_id in station_order
+    )
+)
+
+ordered_train_by_station = {
+    station_id: train_by_station[station_id] for station_id in station_order
+}
+ordered_test_by_station = {
+    station_id: test_by_station[station_id] for station_id in station_order
+}
+
+joined_train = join_station_frames(
+    ordered_train_by_station, target_station_id=TARGET_STATION_ID
+)
+joined_test = join_station_frames(
+    ordered_test_by_station, target_station_id=TARGET_STATION_ID
+)
+
+manifest = write_joined_preprocess_artifacts(
+    joined_train,
+    joined_test,
+    station_ids=station_order,
+    target_station_id=TARGET_STATION_ID,
+    output_dir=JOINED_DIR,
+    split_boundary_utc=split_boundary_utc,
+    test_fraction=TEST_FRACTION,
+    coverage_report=coverage_report,
+)
+
+print(
+    f"Saved joined train dataset: {JOINED_DIR / 'all_stations_train.parquet'} ({len(joined_train):,} rows)"
+)
+print(
+    f"Saved joined test dataset: {JOINED_DIR / 'all_stations_test.parquet'} ({len(joined_test):,} rows)"
+)
+joined_train.info()
+display(joined_train)
+\end{minted}

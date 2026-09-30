@@ -1,0 +1,146 @@
+\section{04\_02\_train\_ridge.ipynb}
+
+\begin{minted}{python}
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+train_path = PROCESSED_DIR / "all_stations_train_features.parquet"
+test_path = PROCESSED_DIR / "all_stations_test_features.parquet"
+RIDGE_ALPHAS = [0.01, 0.1, 1.0, 10.0, 100.0]
+LOG1P_OPTIONS = [False, True]
+MLFLOW_EXPERIMENT_NAME = "ridge"
+PREDICTION_PREVIEW_ROWS = 5
+if CV_SELECTION_METRIC not in {"mae", "rmse"}:
+    raise ValueError("CV_SELECTION_METRIC must be either 'mae' or 'rmse'")
+station_id = TARGET_STATION_ID
+MODEL_DIR = Path("models")
+MODEL_PATH = MODEL_DIR / f"ridge_{station_id}.joblib"
+MODEL_METADATA_PATH = MODEL_DIR / f"ridge_{station_id}.json"
+\end{minted}
+
+\begin{minted}{python}
+cv_results_rows = []
+cv_horizon_rows_by_candidate = {}
+expected_candidate_keys = {
+    (subset_name, float(alpha), bool(log1p_flag))
+    for subset_name, alpha, log1p_flag in product(
+        FEATURE_SUBSETS, RIDGE_ALPHAS, LOG1P_OPTIONS
+    )
+}
+
+
+def fit_predict_fold(
+    train_indices, validation_indices, *, feature_columns, alpha, log1p
+):
+    """Fit one candidate on a fold's training rows; predict its validation rows."""
+    fold_train_rows = train_rows.iloc[train_indices]
+    fold_validation_rows = train_rows.iloc[validation_indices]
+    fold_model = build_ridge_estimator(feature_columns, alpha=alpha, log1p=log1p)
+    fold_model.fit(
+        numeric_predictors(fold_train_rows, feature_columns),
+        fold_train_rows[TARGET_COLUMNS],
+    )
+    return fold_validation_rows[TARGET_COLUMNS], fold_model.predict(
+        numeric_predictors(fold_validation_rows, feature_columns)
+    )
+
+
+for (subset_name, feature_columns), alpha, log1p_flag in product(
+    FEATURE_SUBSETS.items(), RIDGE_ALPHAS, LOG1P_OPTIONS
+):
+    candidate_params = {
+        "subset": subset_name,
+        "feature_count": len(feature_columns),
+        **INPUT_PARQUET_SHA256_PARAMS,
+        "alpha": alpha,
+        "log1p": log1p_flag,
+    }
+    candidate = run_cv_candidate(
+        f"ridge_cv_{subset_name}_{alpha:g}_log1p_{log1p_flag}",
+        partial(
+            fit_predict_fold,
+            feature_columns=feature_columns,
+            alpha=alpha,
+            log1p=log1p_flag,
+        ),
+        tags={"subset": subset_name, "log1p": log1p_flag},
+        parent_params={
+            **candidate_params,
+            "feature_columns": json.dumps(feature_columns),
+            **SEARCH_PARAMS,
+        },
+        fold_params=candidate_params,
+        **CV_RUN_SETTINGS,
+    )
+    candidate_key = (subset_name, float(alpha), bool(log1p_flag))
+    cv_horizon_rows_by_candidate[candidate_key] = candidate.fold_horizon_rows
+    cv_results_rows.append(
+        cv_result_row(
+            {
+                "subset": subset_name,
+                "feature_count": len(feature_columns),
+                "alpha": float(alpha),
+                "log1p": bool(log1p_flag),
+            },
+            candidate.parent_metrics,
+        )
+    )
+
+cv_results = verified_cv_results(
+    cv_results_rows,
+    experiment_name=MLFLOW_EXPERIMENT_NAME,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    expected_candidate_keys=expected_candidate_keys,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    run_key=lambda row: (
+        str(row["tags.subset"]),
+        float(row["params.alpha"]),
+        row["tags.log1p"] == "True",
+    ),
+    key_columns=["subset", "alpha", "log1p"],
+)
+selected_subset, selected_alpha, selected_log1p = select_candidate(
+    cv_results, CV_SELECTION_METRIC
+)
+selected_feature_columns = FEATURE_SUBSETS[selected_subset]
+fold_horizon_rows = cv_horizon_rows_by_candidate[
+    (selected_subset, selected_alpha, selected_log1p)
+]
+print(
+    f"Selected Ridge candidate by CV {CV_SELECTION_METRIC.upper()}: "
+    f"{selected_subset!r}, alpha={selected_alpha:g}, log1p={selected_log1p}"
+)
+display(cv_results[["subset", "feature_count", "alpha", "log1p", *CV_SUMMARY_COLUMNS]])
+\end{minted}
+
+\begin{minted}{python}
+final_model = build_ridge_estimator(
+    selected_feature_columns, alpha=selected_alpha, log1p=selected_log1p
+)
+final_model.fit(
+    numeric_predictors(train_rows, selected_feature_columns),
+    train_rows[TARGET_COLUMNS],
+)
+test_predictions = validate_predictions(
+    final_model.predict(numeric_predictors(test_rows, selected_feature_columns)),
+    expected_rows=len(test_rows),
+    target_columns=TARGET_COLUMNS,
+    artifact_name="test",
+)
+print(
+    f"Fitted the selected Ridge candidate on {len(train_rows):,} eligible training "
+    f"rows and scored {len(test_rows):,} sealed-test rows."
+)
+\end{minted}
+
+\begin{minted}{python}
+sealed = sealed_test_tables(
+    test_rows[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=station_id,
+    model_label="Ridge",
+)
+\end{minted}

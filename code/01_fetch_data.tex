@@ -1,0 +1,97 @@
+\section{01\_fetch\_data.ipynb}
+
+\begin{minted}{python}
+if not PEGELALARM_USERNAME or not PEGELALARM_PASSWORD:
+    raise RuntimeError(
+        "Set PEGELALARM_USERNAME and PEGELALARM_PASSWORD in .env before fetching data"
+    )
+
+RAW_DIR = Path("data/raw")
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+api = BasicApiAccess(PEGELALARM_USERNAME, PEGELALARM_PASSWORD)
+failures = {}
+\end{minted}
+
+\begin{minted}{python}
+catalog_path = RAW_DIR / f"pegelalarm_stations_{COUNTRY_CODE.lower()}.parquet"
+catalog = None
+
+try:
+    catalog = load_or_fetch_catalog(
+        api, catalog_path, country_code=COUNTRY_CODE, skip_if_exists=SKIP_IF_EXISTS
+    )
+except Exception as error:  # noqa: BLE001 -- record fetch failure without stopping the run
+    failures[str(catalog_path)] = error
+    print(f"Failed {catalog_path}: {error}")
+\end{minted}
+
+\begin{minted}{python}
+station_ids = list(STATION_IDS)
+print(f"Using {len(station_ids)} configured stations: {', '.join(station_ids)}")
+\end{minted}
+
+\begin{minted}{python}
+end_utc = utc_current_hour()
+water_by_station = {}
+failures = {}
+latest_water = None
+
+for station_id in tqdm(station_ids, desc="Water histories", unit="station"):
+    water_path = RAW_DIR / f"pegelalarm_{station_id}_height_hour.parquet"
+    water = None
+
+    try:
+        water = load_or_fetch_water_history(
+            api,
+            station_id,
+            water_path,
+            end=end_utc,
+            unit=UNIT,
+            granularity=GRANULARITY,
+            skip_if_exists=SKIP_IF_EXISTS,
+        )
+        water_by_station[station_id] = water
+        latest_water = water
+    except Exception as error:  # noqa: BLE001 -- aggregate every station failure
+        failures[str(water_path)] = error
+        print(f"Failed {water_path}: {error}")
+
+if latest_water is not None:
+    latest_water.info()
+    display(latest_water.head())
+else:
+    print("No water history DataFrame is available to display.")
+\end{minted}
+
+\begin{minted}{python}
+latest_weather = None
+failures = {}
+for station_id in tqdm(station_ids, desc="Weather histories", unit="station"):
+    weather_path = RAW_DIR / f"geosphere_inca_{station_id}_hour.parquet"
+
+    try:
+        weather = load_or_fetch_weather_history(
+            station_id,
+            weather_path,
+            catalog=catalog,
+            water=water_by_station.get(station_id),
+            skip_if_exists=SKIP_IF_EXISTS,
+        )
+        latest_weather = weather
+    except Exception as error:  # noqa: BLE001 -- aggregate every station failure
+        failures[str(weather_path)] = error
+        print(f"Failed {weather_path}: {error}")
+
+if latest_weather is not None:
+    latest_weather.info()
+    display(latest_weather.head())
+else:
+    print("No weather history DataFrame is available to display.")
+\end{minted}
+
+\begin{minted}{python}
+if failures:
+    raise RuntimeError(summarize_failures(failures))
+
+print("Raw-data fetch completed successfully.")
+\end{minted}

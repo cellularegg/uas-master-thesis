@@ -1,0 +1,196 @@
+\section{04\_06\_train\_extra\_trees.ipynb}
+
+\begin{minted}{python}
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+train_path = PROCESSED_DIR / "all_stations_train_features.parquet"
+test_path = PROCESSED_DIR / "all_stations_test_features.parquet"
+EXTRA_TREES_PARAM_DISTRIBUTIONS = {
+    "n_estimators": randint(200, 801),
+    "max_depth": [8, 16, 32, None],
+    "min_samples_leaf": randint(1, 9),
+    "max_features": ["sqrt", 0.5, 1.0],
+}
+EXTRA_TREES_BOOTSTRAP = False
+EXTRA_TREES_N_ITER = 24
+EXTRA_TREES_SEARCH_METHOD, EXTRA_TREES_SEARCH_SPACE_SIZE = search_space_summary(
+    EXTRA_TREES_PARAM_DISTRIBUTIONS
+)
+EXTRA_TREES_N_JOBS = -1
+# Fixed estimator settings shared by every fold fit and the final fit.
+EXTRA_TREES_FIXED_PARAMS = {
+    "bootstrap": EXTRA_TREES_BOOTSTRAP,
+    "n_jobs": EXTRA_TREES_N_JOBS,
+    "random_state": RANDOM_STATE,
+}
+MLFLOW_EXPERIMENT_NAME = "extra_trees"
+PREDICTION_PREVIEW_ROWS = 5
+if CV_SELECTION_METRIC not in {"mae", "rmse"}:
+    raise ValueError("CV_SELECTION_METRIC must be either 'mae' or 'rmse'")
+station_id = TARGET_STATION_ID
+MODEL_DIR = Path("models")
+MODEL_PATH = MODEL_DIR / f"extra_trees_{station_id}.joblib"
+MODEL_METADATA_PATH = MODEL_DIR / f"extra_trees_{station_id}.json"
+\end{minted}
+
+\begin{minted}{python}
+sampled_hyperparameters = deduplicate_sampled_parameters(
+    list(
+        ParameterSampler(
+            EXTRA_TREES_PARAM_DISTRIBUTIONS,
+            n_iter=EXTRA_TREES_N_ITER,
+            random_state=RANDOM_STATE,
+        )
+    ),
+    key=lambda params: sampled_candidate_key("sampled", params)[1:],
+)
+KEY_COLUMNS = [
+    "subset",
+    "max_depth",
+    "n_estimators",
+    "min_samples_leaf",
+    "max_features",
+]
+expected_candidate_keys = {
+    sampled_candidate_key(subset_name, params)
+    for subset_name, params in product(FEATURE_SUBSETS, sampled_hyperparameters)
+}
+cv_results_rows = []
+cv_horizon_rows_by_candidate = {}
+search_progress = tqdm(
+    total=len(expected_candidate_keys) * N_VALIDATION_FOLDS,
+    desc="Extra Trees CV search",
+    unit="fit",
+)
+
+
+def fit_predict_fold(
+    train_indices, validation_indices, *, feature_columns, hyperparameters
+):
+    """Fit one candidate on a fold's training rows; predict its validation rows."""
+    fold_train_rows = train_rows.iloc[train_indices]
+    fold_validation_rows = train_rows.iloc[validation_indices]
+    fold_model = build_extra_trees_estimator(
+        **hyperparameters, **EXTRA_TREES_FIXED_PARAMS
+    )
+    fold_model.fit(
+        numeric_predictors(fold_train_rows, feature_columns),
+        fold_train_rows[TARGET_COLUMNS],
+    )
+    return fold_validation_rows[TARGET_COLUMNS], fold_model.predict(
+        numeric_predictors(fold_validation_rows, feature_columns)
+    )
+
+
+for (subset_name, feature_columns), params in product(
+    FEATURE_SUBSETS.items(), sampled_hyperparameters
+):
+    candidate_key = sampled_candidate_key(subset_name, params)
+    hyperparameters = dict(zip(KEY_COLUMNS[1:], candidate_key[1:], strict=True))
+    max_depth, n_estimators, min_samples_leaf, max_features = candidate_key[1:]
+    label = f"md{max_depth or 'none'}_ne{n_estimators}_ml{min_samples_leaf}_mf{max_features}"
+    hyperparameter_params = candidate_mlflow_params(
+        *candidate_key[1:], bootstrap=EXTRA_TREES_BOOTSTRAP
+    )
+    candidate = run_cv_candidate(
+        f"extra_trees_cv_{subset_name}_{label}",
+        partial(
+            fit_predict_fold,
+            feature_columns=feature_columns,
+            hyperparameters=hyperparameters,
+        ),
+        folds=dataset.folds,
+        execution_uuid=NOTEBOOK_EXECUTION_UUID,
+        tags={"subset": subset_name},
+        parent_params={
+            "subset": subset_name,
+            "feature_count": len(feature_columns),
+            "feature_columns": json.dumps(feature_columns),
+            **INPUT_PARQUET_SHA256_PARAMS,
+            **hyperparameter_params,
+            **SEARCH_PARAMS,
+            "search_unique_candidate_count": len(sampled_hyperparameters),
+        },
+        fold_params={"subset": subset_name, **hyperparameter_params},
+        target_columns=TARGET_COLUMNS,
+        station_id=station_id,
+        window_timestamps=None,
+        gap_rows=EMBARGO_HOURS,
+        forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+        progress=search_progress,
+    )
+    cv_horizon_rows_by_candidate[candidate_key] = pd.concat(
+        candidate.fold_horizon_rows, ignore_index=True
+    )
+    cv_results_rows.append(
+        cv_result_row(
+            {
+                "subset": subset_name,
+                "feature_count": len(feature_columns),
+                **hyperparameters,
+            },
+            candidate.parent_metrics,
+            include_horizons=False,
+        )
+    )
+search_progress.close()
+cv_results = verified_cv_results(
+    cv_results_rows,
+    experiment_name=MLFLOW_EXPERIMENT_NAME,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    expected_candidate_keys=expected_candidate_keys,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    run_key=lambda row: normalize_candidate_key(
+        subset=row["tags.subset"],
+        max_depth=row["params.max_depth"],
+        n_estimators=row["params.n_estimators"],
+        min_samples_leaf=row["params.min_samples_leaf"],
+        max_features=row["params.max_features"],
+    ),
+    key_columns=KEY_COLUMNS,
+    normalize_key=lambda *values: normalize_candidate_key(
+        **dict(zip(KEY_COLUMNS, values, strict=True))
+    ),
+    sort=False,
+)
+selected_candidate_key = select_candidate(cv_results, CV_SELECTION_METRIC)
+(
+    selected_subset,
+    selected_max_depth,
+    selected_n_estimators,
+    selected_min_samples_leaf,
+    selected_max_features,
+) = selected_candidate_key
+selected_hyperparameters = dict(
+    zip(KEY_COLUMNS[1:], selected_candidate_key[1:], strict=True)
+)
+selected_feature_columns = FEATURE_SUBSETS[selected_subset]
+selected_fold_horizon_metrics = cv_horizon_rows_by_candidate[
+    tuple(selected_candidate_key)
+]
+\end{minted}
+
+\begin{minted}{python}
+final_model = build_extra_trees_estimator(
+    **selected_hyperparameters, **EXTRA_TREES_FIXED_PARAMS
+)
+final_model.fit(
+    numeric_predictors(train_rows, selected_feature_columns), train_rows[TARGET_COLUMNS]
+)
+test_predictions = validate_predictions(
+    final_model.predict(numeric_predictors(test_rows, selected_feature_columns)),
+    expected_rows=len(test_rows),
+    target_columns=TARGET_COLUMNS,
+    artifact_name="test",
+)
+sealed = sealed_test_tables(
+    test_rows[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=station_id,
+    model_label="Extra Trees",
+)
+\end{minted}

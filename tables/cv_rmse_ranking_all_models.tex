@@ -1,0 +1,25 @@
+\begin{tabularx}{\textwidth}{@{}rlXr@{}}
+\toprule
+\textbf{Rank} & \textbf{Model} & \textbf{Feature subset} & \textbf{CV RMSE} \\
+\midrule
+1 & RNN & Current water levels, all stations & $12.02$ \\
+2 & XGBoost & Full & $12.43$ \\
+3 & RNN & Raw, all stations & $12.43$ \\
+4 & MLP & Full & $12.64$ \\
+5 & MLP & Raw, all stations & $12.65$ \\
+6 & XGBoost & Raw, all stations & $12.90$ \\
+7 & RNN & Full & $13.03$ \\
+8 & Extra Trees & Raw, all stations & $13.27$ \\
+9 & Ridge & Full & $13.32$ \\
+10 & Extra Trees & Full & $13.45$ \\
+11 & MLP & Current water levels, all stations & $13.93$ \\
+12 & Ridge & Raw, all stations & $14.08$ \\
+13 & RNN & All-station hydrology, quality \& time & $14.33$ \\
+14 & MLP & All-station hydrology, quality \& time & $14.42$ \\
+15 & Ridge & All-station hydrology, quality \& time & $14.44$ \\
+16 & XGBoost & Current water levels, all stations & $14.50$ \\
+17 & XGBoost & All-station hydrology, quality \& time & $14.63$ \\
+18 & Extra Trees & Current water levels, all stations & $14.83$ \\
+19 & Extra Trees & All-station hydrology, quality \& time & $14.91$ \\
+\bottomrule
+\end{tabularx}

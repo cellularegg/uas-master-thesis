@@ -70,11 +70,13 @@ The heatmap in \autoref{fig:weather-future-change-pearson} shows the Pearson cor
 
 
 \autoref{fig:aggregate-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} of all trained models by displaying the mean and the standard deviation across the 5 folds. The standard deviation is used to indicate the variability of the model performance across different folds. XGBoost has the lowest mean \ac{CV} \ac{RMSE} and the lowest standard deviation, indicating that its performance varies less across the folds than the other models. Besides the persistence baseline, RNN has the highest standard deviation ($2.17$), indicating that its performance varies more across the folds. This further supports the selection of XGBoost as the best performing model, as it not only achieves the lowest mean \ac{CV} \ac{RMSE}, but also has the lowest spread of performance across the folds, indicating that it is more robust and consistent in its predictions.
+% Model RNN: RMSE=12.02 ± 1.96
 % Model XGBoost: RMSE=12.43 ± 1.78
-% Model RNN: RMSE=12.57 ± 2.17
 % Model MLP: RMSE=12.64 ± 2.15
 % Model Extra Trees: RMSE=13.27 ± 2.07
 % Model Ridge: RMSE=13.32 ± 2.08
+% Model ARIMAX: RMSE=15.65 ± 2.41
+% Model ARIMA: RMSE=16.42 ± 2.15
 % Model Persistence: RMSE=18.13 ± 2.69
 
 \begin{figure}[htbp]

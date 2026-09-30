@@ -1,0 +1,15 @@
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Hyperparameter} & \textbf{Search space} \\
+\midrule
+feature subset & \{Target-station water level only\} \\
+\addlinespace
+d & \{0, 1\} \\
+\addlinespace
+p & \{1, ..., 6\} if d = 0; \{0, ..., 6\} if d = 1 \\
+\addlinespace
+q & \{0, 1, 2, 3\} \\
+\addlinespace
+intercept & Only if d = 0 \\
+\bottomrule
+\end{tabularx}

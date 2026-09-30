@@ -1,0 +1,309 @@
+\section{04\_07\_train\_rnn.ipynb}
+
+\begin{minted}{python}
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+train_path = PROCESSED_DIR / "all_stations_train_features.parquet"
+test_path = PROCESSED_DIR / "all_stations_test_features.parquet"
+CELL_TYPES: list[str] = ["gru", "lstm"]
+SEQUENCE_LENGTHS = [24]
+HIDDEN_SIZES = [16, 32, 64, 128]
+NUM_LAYERS_OPTIONS = [1, 2]
+RNN_PARAM_DISTRIBUTIONS = {
+    "cell_type": CELL_TYPES,
+    "sequence_length": SEQUENCE_LENGTHS,
+    "hidden_size": HIDDEN_SIZES,
+    "num_layers": NUM_LAYERS_OPTIONS,
+}
+RNN_N_ITER = 8
+RNN_SEARCH_METHOD, RNN_SEARCH_SPACE_SIZE = search_space_summary(RNN_PARAM_DISTRIBUTIONS)
+RNN_DROPOUT = 0.1
+RNN_LEARNING_RATE = 0.001
+RNN_MAX_EPOCHS = 50
+RNN_BATCH_SIZE = 256
+# Fixed training settings passed to every estimator and logged on every candidate.
+RNN_FIXED_PARAMS = {
+    "dropout": RNN_DROPOUT,
+    "learning_rate": RNN_LEARNING_RATE,
+    "max_epochs": RNN_MAX_EPOCHS,
+    "batch_size": RNN_BATCH_SIZE,
+    "random_state": RANDOM_STATE,
+}
+MLFLOW_EXPERIMENT_NAME = "rnn"
+PREDICTION_PREVIEW_ROWS = 5
+if CV_SELECTION_METRIC not in {"mae", "rmse"}:
+    raise ValueError("CV_SELECTION_METRIC must be either 'mae' or 'rmse'")
+station_id = TARGET_STATION_ID
+MODEL_DIR = Path("models")
+MODEL_PATH = MODEL_DIR / f"rnn_{station_id}.joblib"
+MODEL_METADATA_PATH = MODEL_DIR / f"rnn_{station_id}.json"
+\end{minted}
+
+\begin{minted}{python}
+dataset = load_joined_dataset(
+    METADATA_PATH,
+    train_path,
+    test_path,
+    station_id=station_id,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    weather_variables=WEATHER_VARIABLES,
+    initial_train_fraction=INITIAL_TRAIN_FRACTION,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    embargo_rows=EMBARGO_HOURS,
+)
+contract = dataset.contract
+TARGET_COLUMNS = list(contract.target_columns)
+FEATURE_SUBSETS = dataset.feature_subsets
+FULL_CHANNEL_COLUMNS = FEATURE_SUBSETS["full"]
+train_rows = dataset.train_rows
+test_rows = dataset.test_rows
+INPUT_PARQUET_SHA256_PARAMS = dataset.input_hashes
+\end{minted}
+
+\begin{minted}{python}
+train_raw_channel_frame = load_raw_channel_frame(
+    train_path, channel_columns=FULL_CHANNEL_COLUMNS
+)
+test_raw_channel_frame = load_raw_channel_frame(
+    test_path, channel_columns=FULL_CHANNEL_COLUMNS
+)
+\end{minted}
+
+\begin{minted}{python}
+cv_results_rows = []
+cv_horizon_rows_by_candidate = {}
+sequences_by_length = {}
+sampled_hyperparameters = deduplicate_sampled_parameters(
+    list(
+        ParameterSampler(
+            RNN_PARAM_DISTRIBUTIONS, n_iter=RNN_N_ITER, random_state=RANDOM_STATE
+        )
+    ),
+    key=sampled_parameter_key,
+)
+sampled_hyperparameter_keys = {
+    sampled_parameter_key(params) for params in sampled_hyperparameters
+}
+expected_candidate_keys = {
+    (subset_name, *hyperparameter_key)
+    for subset_name in FEATURE_SUBSETS
+    for hyperparameter_key in sampled_hyperparameter_keys
+}
+search_progress = tqdm(
+    total=len(expected_candidate_keys) * N_VALIDATION_FOLDS,
+    desc="RNN CV search",
+    unit="fit",
+)
+
+
+def fit_predict_fold(
+    train_indices, validation_indices, *, sequences, targets, architecture
+):
+    """Fit one candidate on a fold's training windows; predict its validation windows."""
+    fold_model = build_rnn_estimator(**architecture, **RNN_FIXED_PARAMS)
+    fold_model.fit(sequences[train_indices], targets[train_indices])
+    return (
+        pd.DataFrame(targets[validation_indices], columns=TARGET_COLUMNS),
+        fold_model.predict(sequences[validation_indices]),
+    )
+
+
+for sequence_length in sorted({key[1] for key in sampled_hyperparameter_keys}):
+    # Built over every subset's channels so all subsets share these rows and folds.
+    cohort_sequences, train_targets, train_origins = build_sequences(
+        train_raw_channel_frame,
+        train_rows,
+        sequence_length=sequence_length,
+        channel_columns=FULL_CHANNEL_COLUMNS,
+        target_columns=TARGET_COLUMNS,
+        artifact_name="train",
+    )
+    cv_splits, validation_test_size = time_series_splits(
+        len(train_origins),
+        initial_train_fraction=INITIAL_TRAIN_FRACTION,
+        n_validation_folds=N_VALIDATION_FOLDS,
+        embargo_rows=EMBARGO_HOURS,
+    )
+    sequences_by_length[sequence_length] = {
+        "cohort_sequences": cohort_sequences,
+        "train_targets": train_targets,
+        "train_origins": train_origins,
+    }
+    for subset_name, channel_columns in FEATURE_SUBSETS.items():
+        train_sequences = cohort_sequences[
+            :, :, subset_channel_indices(FULL_CHANNEL_COLUMNS, channel_columns)
+        ]
+        channel_params = {
+            "channel_count": len(channel_columns),
+            "channel_columns": json.dumps(channel_columns),
+        }
+        for candidate_key in sorted(
+            key
+            for key in expected_candidate_keys
+            if key[0] == subset_name and key[2] == sequence_length
+        ):
+            candidate = dict(zip(CANDIDATE_COLUMNS, candidate_key, strict=True))
+            architecture = {
+                name: value for name, value in candidate.items() if name != "subset"
+            }
+            cv = run_cv_candidate(
+                "rnn_cv_" + "_".join(map(str, candidate_key)),
+                partial(
+                    fit_predict_fold,
+                    sequences=train_sequences,
+                    targets=train_targets,
+                    architecture=architecture,
+                ),
+                folds=cv_splits,
+                execution_uuid=NOTEBOOK_EXECUTION_UUID,
+                tags=candidate,
+                parent_params={
+                    **candidate,
+                    **channel_params,
+                    **SEARCH_PARAMS,
+                    "search_unique_candidate_count": len(expected_candidate_keys),
+                    "validation_test_size": validation_test_size,
+                    "sequence_eligible_train_rows": len(train_origins),
+                },
+                fold_params={**candidate, **INPUT_PARQUET_SHA256_PARAMS},
+                target_columns=TARGET_COLUMNS,
+                station_id=station_id,
+                window_timestamps=train_origins["timestamp"],
+                gap_rows=EMBARGO_HOURS,
+                forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+                progress=search_progress,
+                describe_fold=lambda fold, candidate=candidate: (
+                    f"RNN CV search ({candidate['subset']}, {candidate['cell_type']}, "
+                    f"sequence_length={candidate['sequence_length']}, "
+                    f"hidden_size={candidate['hidden_size']}, "
+                    f"num_layers={candidate['num_layers']}, fold {fold})"
+                ),
+            )
+            cv_horizon_rows_by_candidate[candidate_key] = cv.fold_horizon_rows
+            cv_results_rows.append(
+                cv_result_row(
+                    {
+                        **candidate,
+                        "channel_count": len(channel_columns),
+                        "dropout": RNN_DROPOUT,
+                        "sequence_eligible_train_rows": len(train_origins),
+                    },
+                    cv.parent_metrics,
+                )
+            )
+        del train_sequences
+
+search_progress.close()
+cv_results = verified_cv_results(
+    cv_results_rows,
+    experiment_name=MLFLOW_EXPERIMENT_NAME,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    expected_candidate_keys=expected_candidate_keys,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    run_key=lambda row: (
+        str(row["tags.subset"]),
+        str(row["tags.cell_type"]),
+        int(row["tags.sequence_length"]),
+        int(row["tags.hidden_size"]),
+        int(row["tags.num_layers"]),
+    ),
+    key_columns=CANDIDATE_COLUMNS,
+)
+selected_candidate = dict(
+    zip(
+        CANDIDATE_COLUMNS,
+        select_candidate(cv_results, CV_SELECTION_METRIC),
+        strict=True,
+    )
+)
+(
+    selected_subset,
+    selected_cell_type,
+    selected_sequence_length,
+    selected_hidden_size,
+    selected_num_layers,
+) = selected_candidate.values()
+SELECTED_CHANNEL_COLUMNS = FEATURE_SUBSETS[selected_subset]
+selected_architecture = {
+    name: value for name, value in selected_candidate.items() if name != "subset"
+}
+fold_horizon_rows = cv_horizon_rows_by_candidate[tuple(selected_candidate.values())]
+selected_label = (
+    f"{selected_subset}, {selected_cell_type}, "
+    f"sequence_length={selected_sequence_length}, "
+    f"hidden_size={selected_hidden_size}, num_layers={selected_num_layers}"
+)
+print(
+    f"Selected RNN candidate by CV {CV_SELECTION_METRIC.upper()}: "
+    f"subset={selected_subset!r}, cell_type={selected_cell_type!r}, "
+    f"sequence_length={selected_sequence_length}, "
+    f"hidden_size={selected_hidden_size}, num_layers={selected_num_layers}"
+)
+display(
+    cv_results[
+        [
+            *CANDIDATE_COLUMNS,
+            "channel_count",
+            "dropout",
+            "sequence_eligible_train_rows",
+            *CV_SUMMARY_COLUMNS,
+        ]
+    ]
+)
+\end{minted}
+
+\begin{minted}{python}
+selected_cache = sequences_by_length[selected_sequence_length]
+train_sequences = selected_cache["cohort_sequences"][
+    :, :, subset_channel_indices(FULL_CHANNEL_COLUMNS, SELECTED_CHANNEL_COLUMNS)
+]
+train_targets = selected_cache["train_targets"]
+train_origins = selected_cache["train_origins"]
+
+final_model = build_rnn_estimator(**selected_architecture, **RNN_FIXED_PARAMS)
+final_model.fit(train_sequences, train_targets)
+print(
+    f"Fitted the selected RNN candidate on {len(train_origins):,} sequence-eligible "
+    f"training rows (subset={selected_subset!r}, "
+    f"sequence_length={selected_sequence_length})."
+)
+\end{minted}
+
+\begin{minted}{python}
+test_cohort_sequences, test_targets, test_origins = build_sequences(
+    test_raw_channel_frame,
+    test_rows,
+    sequence_length=selected_sequence_length,
+    channel_columns=FULL_CHANNEL_COLUMNS,
+    target_columns=TARGET_COLUMNS,
+    artifact_name="test",
+)
+test_sequences = test_cohort_sequences[
+    :, :, subset_channel_indices(FULL_CHANNEL_COLUMNS, SELECTED_CHANNEL_COLUMNS)
+]
+excluded_test_rows = len(test_rows) - len(test_origins)
+print(
+    f"Excluded {excluded_test_rows:,} of {len(test_rows):,} sealed-test rows without a "
+    f"complete {selected_sequence_length}-hour window across all "
+    f"{len(FULL_CHANNEL_COLUMNS)} cohort channels."
+)
+test_predictions = validate_predictions(
+    final_model.predict(test_sequences),
+    expected_rows=len(test_origins),
+    target_columns=TARGET_COLUMNS,
+    artifact_name="test",
+)
+\end{minted}
+
+\begin{minted}{python}
+sealed = sealed_test_tables(
+    test_origins[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=station_id,
+    model_label="RNN",
+)
+\end{minted}

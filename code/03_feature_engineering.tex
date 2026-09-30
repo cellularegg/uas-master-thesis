@@ -1,0 +1,94 @@
+\section{03\_feature\_engineering.ipynb}
+
+\begin{minted}{python}
+JOINED_DIR = Path("data/processed/joined")
+PREPROCESS_MANIFEST_PATH = JOINED_DIR / "all_stations_preprocess_metadata.json"
+preprocess_manifest = json.loads(PREPROCESS_MANIFEST_PATH.read_text())
+STATION_IDS = tuple(preprocess_manifest["station_ids"])
+if preprocess_manifest["target_station_id"] != TARGET_STATION_ID:
+    raise ValueError(
+        "preprocessing manifest target does not match configured target: "
+        f"{preprocess_manifest['target_station_id']!r} != {TARGET_STATION_ID!r}"
+    )
+PARTITIONS = ("train", "test")
+ENGINEERED_STATION_IDS = (TARGET_STATION_ID,)
+SOURCE_COLUMNS = ("water_level", "imputed", "station_id", *WEATHER_VARIABLES)
+DERIVED_FEATURE_COLUMNS = tuple(
+    column
+    for column in feature_column_names(DEFAULT_FEATURE_CONFIG)
+    if column not in SOURCE_COLUMNS
+)
+DERIVED_COLUMNS = (
+    *DERIVED_FEATURE_COLUMNS,
+    "target_valid",
+    *target_column_names(DEFAULT_FEATURE_CONFIG),
+)
+OUTPUT_PATHS = {
+    partition: JOINED_DIR / f"all_stations_{partition}_features.parquet"
+    for partition in PARTITIONS
+}
+\end{minted}
+
+\begin{minted}{python}
+summaries: list[dict[str, object]] = []
+partition_features: dict[str, pd.DataFrame] = {}
+for partition in PARTITIONS:
+    source_path = JOINED_DIR / f"all_stations_{partition}.parquet"
+    joined_source = pd.read_parquet(source_path)
+    joined_features, partition_summaries = build_joined_feature_frame(
+        joined_source,
+        partition,
+        station_id=TARGET_STATION_ID,
+        derived_columns=DERIVED_COLUMNS,
+        config=DEFAULT_FEATURE_CONFIG,
+    )
+    partition_features[partition] = joined_features
+    for summary in partition_summaries:
+        summaries.append(
+            {
+                **summary,
+                "rows": len(joined_features),
+                "columns": len(joined_features.columns),
+                "path": str(OUTPUT_PATHS[partition]),
+            }
+        )
+
+train_features = partition_features["train"]
+test_features = partition_features["test"]
+
+manifest = write_joined_feature_artifacts(
+    train_features,
+    test_features,
+    station_ids=STATION_IDS,
+    engineered_station_ids=ENGINEERED_STATION_IDS,
+    train_source_path=JOINED_DIR / "all_stations_train.parquet",
+    test_source_path=JOINED_DIR / "all_stations_test.parquet",
+    output_dir=JOINED_DIR,
+)
+\end{minted}
+
+\begin{minted}{python}
+artifact_summary = pd.DataFrame(summaries)
+contract_summary = pd.DataFrame(
+    {
+        "contract": [
+            "original joined columns",
+            "engineered stations",
+            "derived predictors for target station",
+            "raw predictors per upstream station",
+            "targets for target station",
+            "forecast horizon (hours)",
+        ],
+        "count": [
+            len(joined_source.columns),
+            len(ENGINEERED_STATION_IDS),
+            len(DERIVED_FEATURE_COLUMNS),
+            len(SOURCE_COLUMNS) - 1,
+            len(target_column_names(DEFAULT_FEATURE_CONFIG)),
+            DEFAULT_FEATURE_CONFIG.horizon_hours,
+        ],
+    }
+)
+display(artifact_summary)
+display(contract_summary)
+\end{minted}

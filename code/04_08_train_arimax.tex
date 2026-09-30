@@ -1,0 +1,142 @@
+\section{04\_08\_train\_arimax.ipynb}
+
+\begin{minted}{python}
+N_WORKERS = 10
+MAXITER = 200
+MAX_OUTER_ITER = 50
+GLS_TOL = 1e-6
+PREDICTION_PREVIEW_ROWS = 5
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+TRAIN_PATH = PROCESSED_DIR / "all_stations_train_features.parquet"
+TEST_PATH = PROCESSED_DIR / "all_stations_test_features.parquet"
+MODEL_PATH = Path("models") / f"arimax_{TARGET_STATION_ID}.joblib"
+MODEL_METADATA_PATH = MODEL_PATH.with_suffix(".json")
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+MLFLOW_EXPERIMENT = mlflow.set_experiment("arimax")
+MLFLOW_CLIENT = MlflowClient()
+\end{minted}
+
+\begin{minted}{python}
+dataset = load_joined_dataset(
+    METADATA_PATH,
+    TRAIN_PATH,
+    TEST_PATH,
+    station_id=TARGET_STATION_ID,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    weather_variables=WEATHER_VARIABLES,
+    initial_train_fraction=INITIAL_TRAIN_FRACTION,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    embargo_rows=EMBARGO_HOURS,
+)
+contract = dataset.contract
+TARGET_COLUMNS = list(contract.target_columns)
+train_rows, test_rows = dataset.train_rows, dataset.test_rows
+CANDIDATES = candidate_grid(dataset.feature_subsets)
+COMMON_PARAMS = run_params(
+    dataset,
+    station_id=TARGET_STATION_ID,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    candidate_count=len(CANDIDATES),
+    n_workers=N_WORKERS,
+    maxiter=MAXITER,
+    max_outer_iter=MAX_OUTER_ITER,
+    gls_tol=GLS_TOL,
+    selection_metric=CV_SELECTION_METRIC,
+    initial_train_fraction=INITIAL_TRAIN_FRACTION,
+    embargo_rows=EMBARGO_HOURS,
+)
+display(
+    pd.DataFrame(
+        [
+            {"subset": name, "feature_count": len(columns)}
+            for name, columns in dataset.feature_subsets.items()
+        ]
+    )
+)
+\end{minted}
+
+\begin{minted}{python}
+evaluations = log_cv_search(
+    evaluate_candidates(
+        CANDIDATES,
+        dataset.predictor_train_history,
+        dataset.target_train_history,
+        train_rows,
+        dataset.folds,
+        contract=contract,
+        n_workers=N_WORKERS,
+        maxiter=MAXITER,
+        max_outer_iter=MAX_OUTER_ITER,
+        tol=GLS_TOL,
+    ),
+    candidates=CANDIDATES,
+    client=MLFLOW_CLIENT,
+    experiment_id=MLFLOW_EXPERIMENT.experiment_id,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    common_params=COMMON_PARAMS,
+)
+comparison = candidate_table(evaluations)
+selected_key = select_candidate(comparison, CV_SELECTION_METRIC)
+winner = next(
+    result
+    for result in evaluations
+    if (result.candidate.subset, *result.candidate.order) == selected_key
+)
+failed_count = sum(not result.summary for result in evaluations)
+print(f"{failed_count} of {len(evaluations)} candidates failed")
+display(comparison)
+display(pd.DataFrame(winner.fold_details))
+cv_figure = cv_error_boxplots_figure(
+    winner.horizons, TARGET_COLUMNS, title="Selected ARIMAX CV errors"
+)
+plt.show()
+\end{minted}
+
+\begin{minted}{python}
+sealed_test_started_at_ms = time_ns() // 1_000_000
+final_progress = tqdm(total=2, desc="ARIMAX final fit", unit="step")
+with threadpool_limits(limits=1):
+    final_model, final_fit_details = fit_arimax(
+        train_rows,
+        contract=contract,
+        candidate=winner.candidate,
+        maxiter=MAXITER,
+        max_outer_iter=MAX_OUTER_ITER,
+        tol=GLS_TOL,
+    )
+final_progress.update()
+final_progress.set_description("ARIMAX sealed-test forecast")
+
+predictor_history, target_history = sealed_test_histories(dataset)
+with threadpool_limits(limits=1):
+    test_predictions = rolling_forecasts(
+        final_model, predictor_history, target_history, test_rows["timestamp"]
+    )
+final_progress.update()
+final_progress.close()
+display(pd.DataFrame([final_fit_details]))
+(
+    aggregate_metrics,
+    per_horizon_metrics,
+    regime_definition,
+    regime_aggregate_metrics,
+    regime_horizon_metrics,
+) = sealed_test_tables(
+    test_rows[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=TARGET_STATION_ID,
+)
+sealed_test_ended_at_ms = time_ns() // 1_000_000
+display(aggregate_metrics)
+display(per_horizon_metrics)
+display(
+    prediction_preview(test_rows, test_predictions, target_columns=TARGET_COLUMNS).head(
+        PREDICTION_PREVIEW_ROWS
+    )
+)
+\end{minted}

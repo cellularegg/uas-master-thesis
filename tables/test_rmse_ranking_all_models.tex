@@ -1,0 +1,14 @@
+\begin{tabularx}{\textwidth}{@{}rlXr@{}}
+\toprule
+\textbf{Rank} & \textbf{Model} & \textbf{Feature subset} & \textbf{Test RMSE} \\
+\midrule
+1 & MLP & Full & $12.11$ \\
+2 & Ridge & Full & $12.85$ \\
+3 & RNN & Current water levels, all stations & $12.96$ \\
+4 & XGBoost & Full & $13.90$ \\
+5 & Extra Trees & Raw, all stations & $14.14$ \\
+6 & ARIMAX & Full & $14.15$ \\
+7 & ARIMA & Target-station water level only & $15.99$ \\
+8 & Persistence & Not applicable & $16.00$ \\
+\bottomrule
+\end{tabularx}

@@ -1,0 +1,84 @@
+\section{04\_01\_train\_persistence.ipynb}
+
+\begin{minted}{python}
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+train_path = PROCESSED_DIR / "all_stations_train_features.parquet"
+test_path = PROCESSED_DIR / "all_stations_test_features.parquet"
+MLFLOW_EXPERIMENT_NAME = "persistence"
+PREDICTION_PREVIEW_ROWS = 5
+station_id = TARGET_STATION_ID
+PERSISTENCE_COLUMN = f"{station_id}__water_level"
+\end{minted}
+
+\begin{minted}{python}
+def persistence_predictions(rows: pd.DataFrame) -> np.ndarray:
+    """Tile each issue time's observed water level across every forecast horizon."""
+    return np.repeat(
+        rows[[PERSISTENCE_COLUMN]].to_numpy(dtype=float),
+        repeats=len(TARGET_COLUMNS),
+        axis=1,
+    )
+\end{minted}
+
+\begin{minted}{python}
+mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+common_params = {
+    "persistence_column": PERSISTENCE_COLUMN,
+    **INPUT_PARQUET_SHA256_PARAMS,
+    "forecast_horizon_hours": FORECAST_HORIZON_HOURS,
+}
+
+
+# Each fold's training indices are intentionally unused: persistence never fits.
+def predict_fold(_train_indices, validation_indices):
+    """Score one fold's validation rows with the persistence forecast."""
+    fold_validation_rows = train_rows.iloc[validation_indices]
+    return fold_validation_rows[TARGET_COLUMNS], persistence_predictions(
+        fold_validation_rows
+    )
+
+
+cv = run_cv_candidate(
+    "persistence_cv",
+    predict_fold,
+    folds=dataset.folds,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    tags={},
+    parent_params={
+        **common_params,
+        "n_validation_folds": N_VALIDATION_FOLDS,
+        "validation_test_size": dataset.validation_test_size,
+        "embargo_hours": EMBARGO_HOURS,
+        "common_train_rows": len(train_rows),
+    },
+    fold_params=common_params,
+    target_columns=TARGET_COLUMNS,
+    station_id=station_id,
+    window_timestamps=train_rows["timestamp"],
+    gap_rows=EMBARGO_HOURS,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    log_train_window=False,
+)
+print(f"Persistence cross-validation results for {station_id}")
+display(cv.fold_aggregate_metrics.reset_index(drop=True))
+\end{minted}
+
+\begin{minted}{python}
+test_predictions = validate_predictions(
+    persistence_predictions(test_rows),
+    expected_rows=len(test_rows),
+    target_columns=TARGET_COLUMNS,
+    artifact_name="test",
+)
+sealed = sealed_test_tables(
+    test_rows[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=station_id,
+    model_label="Persistence",
+)
+\end{minted}

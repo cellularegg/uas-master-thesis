@@ -125,6 +125,7 @@ The feature engineering step creates additional features from the preprocessed d
   \item Quality indicators: Number of imputed values in the preceding $x$ hours.
   \item Calendar features: Encoding of the timestamp into features such as the hour of the day and day of the week.
 \end{enumerate}
+Cyclical calendar features, like hour of the day or day of the week are encoded using sine and cosine transformations to capture their periodic structure. This preserves their cyclical nature and ensures that values at the boundary, like 23:00 and 00:00 are represented as being close together rather than far apart.
 To keep the feature space manageable, the additional lagged, change, rolling, and calendar features are calculated only for the target station. The upstream stations provide their current water level, imputation indicator, and weather variables as additional inputs. The exact configuration of the feature engineering is shown in \autoref{tab:engineered-features} \cite{meisenbacherReviewAutomatedTime2022}. To prevent data leakage, feature engineering is performed separately on the training and test datasets. For \ac{CV}, data leakage is avoided by applying expanding-window \ac{CV}, as described in \autoref{sec:experimental-design}.
 \begin{table}[htbp]
     \centering
@@ -171,12 +172,16 @@ The final step of the feature engineering is to add a target column for each hou
 
 The resulting input matrix contains 73 predictor features: 45 features are derived from the target station and four features are provided by each of the seven upstream stations.
 \section{Forecasting Strategy}
-The general approach is to use a \ac{MIMO} strategy. This means that a single model predicts multiple future time steps at once, rather than using a recursive strategy where the model predicts one time step at a time and feeds the prediction back into the model for the next time step. The \ac{MIMO} strategy is chosen to mitigate the error accumulation that can occur with recursive strategies \cite{bentaiebReviewComparisonStrategies2012}. \autoref{eq:mimo-forecasting} shows the concept of a \ac{MIMO} forecasting model, where $X_t$ is the input data at time $t$, $\hat{y}_{t+x}$ is the predicted water level at time $t+x$, and $H$ is the forecast horizon. The forecast horizon is set to 24 hours.
+The general approach is to use a \ac{MIMO} strategy. Except for \ac{ARIMA} and \ac{ARIMAX}, all models follow this approach. This means that a single model predicts multiple future time steps at once, rather than using a recursive strategy where the model predicts one time step at a time and feeds the prediction back into the model for the next time step. The \ac{MIMO} strategy is chosen to mitigate the error accumulation that can occur with recursive strategies \cite{bentaiebReviewComparisonStrategies2012}. \autoref{eq:mimo-forecasting} shows the concept of a \ac{MIMO} forecasting model, where $X_t$ is the input data at time $t$, $\hat{y}_{t+x}$ is the predicted water level at time $t+x$, and $H$ is the forecast horizon. The forecast horizon is set to 24 hours.
 \begin{equation}
   X_t \longrightarrow \text{Model} \longrightarrow [\hat{y}_{t+1}, \hat{y}_{t+2}, \ldots, \hat{y}_{t+H}]
   \label{eq:mimo-forecasting}
 \end{equation}
 Another reason for choosing a \ac{MIMO} approach is to reduce the number of models, thus also reducing training time and complexity of the system. If the goal is to roll out the system to multiple stations, training and inference time should be kept as low as possible.
+
+\ac{ARIMA} and \ac{ARIMAX} do not follow the \ac{MIMO} strategy. They use a recursive strategy, which means that they predict one time step at a time and use the previous predictions as inputs for the next time step. For \ac{ARIMAX} only the target station and calendar predictors are updated during the forecast, the predictors from other stations and weather keep their values at the forecast origin. These models are included as classical statistical models that use a recursive strategy.
+
+% \todo{Explain that ARIMA and ARIMAX are autoregressive models and not MIMO ones}
 % \cite{bentaiebReviewComparisonStrategies2012} \cite{greenStratifyUnifyingMultistep2025} \cite{bentaiebMultipleoutputModelingMultistepahead2010}
 
 
@@ -185,7 +190,7 @@ Another reason for choosing a \ac{MIMO} approach is to reduce the number of mode
 The dataset is split into training and test sets (80/20); the test set is only used for the final evaluation, while the training set is used for training, hyperparameter tuning, feature selection and model selection. This ensures that the test set remains completely unseen during the model development process.  Expanding window \ac{CV} is used to evaluate different hyperparameters and features \cite{hewamalageForecastEvaluationData2023}. \autoref{fig:expanding-window-cv} shows a schematic overview of the \ac{CV} setup; 50\% of the training data is used for training in the first fold and about 10\% of the training data is used for validation in each fold. The training set grows by about 10\% in each fold. Between the folds' training and validation sets there is a gap of 24 hours (equal to the forecast horizon) to prevent data leakage. Before training the rows are checked for eligibility. This check contains the following conditions: all target values must exist and not be imputed and all features must be valid (not missing); this also includes features not used in the current feature subset. This decision has been made to provide a fair comparison between the different subsets regardless of the number of available rows per feature. % Todo make this sentence more clear
 \input{figures/expanding-window-cv.tex}
 
-The full \ac{CV} is done for each searched hyperparameter configuration and feature set. \autoref{tab:feature-subsets} shows the various feature subsets used. For Ridge, XGBoost, Extra Trees and \ac{MLP}, each searched hyperparameter combination is trained on all six feature subsets. After the \ac{CV} the best candidate from each tuned model family is selected and retrained on the entire training set.
+The full \ac{CV} is done for each searched hyperparameter configuration and feature set. \autoref{tab:feature-subsets} shows the various feature subsets used. For Ridge, XGBoost, ARIMAX, Extra Trees, \ac{MLP} and \ac{RNN}, each searched hyperparameter combination is trained on all six feature subsets. After the \ac{CV} the best candidate from each tuned model family is selected and retrained on the entire training set.
 
 \begin{table}[htbp]
     \centering
@@ -209,7 +214,7 @@ The full \ac{CV} is done for each searched hyperparameter configuration and feat
         & All available input features from the target station.
         & Predictors from upstream stations. \\
         \addlinespace
-        Target-station hydrology, quality, and time
+        target station hydrology, quality, and time
         & Hydrological variables, data-quality indicators, and temporal features from the target station.
         & Weather variables and predictors from upstream stations. \\
         \addlinespace
@@ -222,7 +227,7 @@ The full \ac{CV} is done for each searched hyperparameter configuration and feat
     \label{tab:feature-subsets}
 \end{table}
 
-Among the tuned models, only the RNN is not trained on all feature subsets. Instead, it is trained exclusively on the raw all-stations feature subset. This choice is made both to reduce the computational cost and training time and because the RNN is specifically designed to learn temporal dependencies directly from sequences of past observations. Ridge regression is tuned using grid search, while XGBoost, Extra Trees, \ac{MLP} and \ac{RNN} are tuned using random search. The persistence baseline is not tuned. \cite{bergstraRandomSearchHyperParameter2012, feurerHyperparameterOptimization2019}
+Among the tuned models, only \ac{ARIMA} is not trained on all feature subsets, since \ac{ARIMA} is a univariate model it uses only the target station water level as an input. Ridge regression, \ac{ARIMA} and \ac{ARIMAX} are tuned using grid search, while XGBoost, Extra Trees, \ac{MLP} and \ac{RNN} are tuned using random search. The persistence baseline is not tuned. \cite{bergstraRandomSearchHyperParameter2012, feurerHyperparameterOptimization2019}
 
 MLflow is used to manage the experiments and track the results. After the \ac{CV} the best model is selected based on the mean \ac{RMSE} across all folds.
 % TODO GRID SEARCH + Randomized grid search
@@ -232,7 +237,7 @@ MLflow is used to manage the experiments and track the results. After the \ac{CV
 
 
 \section{Models}
-The baseline model is a persistence model, which predicts the last observed water level for each future time step \cite{hyndmanAnotherLookMeasures2006, makridakisM4Competition1000002020}. Ridge regression is included as a linear model. Two tree-based approaches are considered: XGBoost and Extra Trees. Extra Trees is used instead of Random Forest because its additional randomization can reduce computational cost while providing a comparable tree-ensemble approach \cite{geurtsExtremelyRandomizedTrees2006}. Finally, two neural-network approaches are included: a feed-forward \ac{MLP} and an \ac{RNN} using either \ac{GRU} or \ac{LSTM} cells.
+The baseline model is a persistence model, which predicts the last observed water level for each future time step \cite{hyndmanAnotherLookMeasures2006, makridakisM4Competition1000002020}. Ridge regression is included as a linear model. \ac{ARIMA} uses past water levels at the target station. \ac{ARIMAX} also uses exogenous predictors. During forecasting, target station predictors are recalculated from previous predictions, calendar predictors are updated each hour, and predictors from other stations and weather use their values at the forecast origin. Two tree-based approaches are considered: XGBoost and Extra Trees. Extra Trees is used instead of Random Forest because its additional randomization can reduce computational cost while providing a comparable tree-ensemble approach \cite{geurtsExtremelyRandomizedTrees2006}. Finally, two neural-network approaches are included: a feed-forward \ac{MLP} and an \ac{RNN} using either \ac{GRU} or \ac{LSTM} cells.
 
 \section{Model Evaluation}
 The main performance measure is the \ac{RMSE}; additionally, \ac{MAE} and \ac{ME} are reported. \ac{RMSE} is chosen as the primary metric because it penalizes larger prediction errors more strongly. The other metrics provide additional information about model performance. \ac{MAE} is less sensitive to large errors than \ac{RMSE}, while \ac{ME} provides information about systematic prediction bias. Each metric is calculated separately for every forecast horizon step and additionally across the entire forecast horizon. Furthermore, \ac{MAE}, \ac{RMSE} and \ac{ME} are calculated separately for the $Q_1$--$Q_4$ ranges of the actual water levels to evaluate model performance under different water-level conditions. The quartile thresholds are calculated based on the training data only. As an additional diagnostic, the metrics are also calculated for observations at or above 545 cm, the default alarm threshold for the target station, to evaluate model performance during high water events.

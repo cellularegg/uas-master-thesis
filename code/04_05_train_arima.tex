@@ -1,0 +1,174 @@
+\section{04\_05\_train\_arima.ipynb}
+
+\begin{minted}{python}
+CANDIDATES = candidate_grid()
+N_WORKERS = 10  # Set to 1 for sequential evaluation.
+MAXITER = 200
+ACF_PACF_LAGS = 48
+PREDICTION_PREVIEW_ROWS = 5
+
+PROCESSED_DIR = Path("data/processed/joined")
+METADATA_PATH = PROCESSED_DIR / "all_stations_feature_metadata.json"
+TRAIN_PATH = PROCESSED_DIR / "all_stations_train_features.parquet"
+TEST_PATH = PROCESSED_DIR / "all_stations_test_features.parquet"
+MODEL_PATH = Path("models") / f"arima_{TARGET_STATION_ID}.joblib"
+MODEL_METADATA_PATH = MODEL_PATH.with_suffix(".json")
+MLFLOW_EXPERIMENT_NAME = "arima"
+NOTEBOOK_EXECUTION_UUID = str(uuid4())
+
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+MLFLOW_EXPERIMENT = mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+MLFLOW_CLIENT = MlflowClient()
+\end{minted}
+
+\begin{minted}{python}
+dataset = load_joined_dataset(
+    METADATA_PATH,
+    TRAIN_PATH,
+    TEST_PATH,
+    station_id=TARGET_STATION_ID,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    weather_variables=WEATHER_VARIABLES,
+    initial_train_fraction=INITIAL_TRAIN_FRACTION,
+    n_validation_folds=N_VALIDATION_FOLDS,
+    embargo_rows=EMBARGO_HOURS,
+)
+contract = dataset.contract
+TARGET_COLUMNS = list(contract.target_columns)
+train_rows = dataset.train_rows
+test_rows = dataset.test_rows
+train_history = observed_hourly_history(dataset.target_train_history)
+
+COMMON_PARAMS = run_params(
+    dataset,
+    station_id=TARGET_STATION_ID,
+    forecast_horizon_hours=FORECAST_HORIZON_HOURS,
+    candidate_count=len(CANDIDATES),
+    n_workers=N_WORKERS,
+    selection_metric=CV_SELECTION_METRIC,
+    maxiter=MAXITER,
+    initial_train_fraction=INITIAL_TRAIN_FRACTION,
+    embargo_rows=EMBARGO_HOURS,
+)
+display(
+    pd.DataFrame(
+        [
+            {
+                "train_hours": len(train_history),
+                "missing_observed_train_hours": int(train_history.isna().sum()),
+                "eligible_train_origins": len(train_rows),
+                "eligible_test_origins": len(test_rows),
+            }
+        ]
+    )
+)
+\end{minted}
+
+\begin{minted}{python}
+first_train_indices, _ = dataset.folds[0]
+first_fold_cutoff = train_rows.iloc[first_train_indices[-1]][
+    "timestamp"
+] + pd.Timedelta(hours=FORECAST_HORIZON_HOURS)
+diagnostic_history = latest_complete_segment(train_history.loc[:first_fold_cutoff])
+correlation_figure = arima_correlation_figure(diagnostic_history, lags=ACF_PACF_LAGS)
+plt.show()
+\end{minted}
+
+\begin{minted}{python}
+evaluations = log_cv_search(
+    evaluate_candidates(
+        CANDIDATES,
+        train_history,
+        train_rows,
+        dataset.folds,
+        contract=contract,
+        n_workers=N_WORKERS,
+        maxiter=MAXITER,
+    ),
+    candidate_count=len(CANDIDATES),
+    client=MLFLOW_CLIENT,
+    experiment_id=MLFLOW_EXPERIMENT.experiment_id,
+    execution_uuid=NOTEBOOK_EXECUTION_UUID,
+    common_params=COMMON_PARAMS,
+)
+
+selected_order, selected_intercept = select_candidate(
+    candidate_table(evaluations), CV_SELECTION_METRIC
+)
+winner = next(
+    result
+    for result in evaluations
+    if (result.candidate.order, result.candidate.intercept)
+    == (selected_order, selected_intercept)
+)
+cv_summary = winner.summary
+cv_aggregate_metrics = winner.aggregate
+cv_horizon_metrics = winner.horizons
+comparison = pd.DataFrame(
+    [
+        {
+            **result.candidate.parameters(),
+            "status": "ok" if result.summary else "failed",
+            **result.summary,
+        }
+        for result in evaluations
+    ]
+)
+print(
+    f"{comparison['status'].eq('failed').sum()} of {len(comparison)} candidates failed"
+)
+display(comparison)
+display(pd.DataFrame(winner.fold_details))
+search_figure = arima_search_figure(comparison, metric=CV_SELECTION_METRIC)
+display(search_figure)
+cv_figure = cv_error_boxplots_figure(
+    cv_horizon_metrics, TARGET_COLUMNS, title="Selected ARIMA CV errors"
+)
+plt.show()
+\end{minted}
+
+\begin{minted}{python}
+sealed_test_started_at_ms = time_ns() // 1_000_000
+final_progress = tqdm(total=2, desc="ARIMA final fit", unit="step")
+final_model, final_fit_details = fit_arima(
+    train_history,
+    cutoff=train_rows["timestamp"].iloc[-1]
+    + pd.Timedelta(hours=FORECAST_HORIZON_HOURS),
+    contract=contract,
+    candidate=winner.candidate,
+    maxiter=MAXITER,
+)
+final_progress.update()
+final_progress.set_description("ARIMA sealed-test forecast")
+
+test_history = observed_hourly_history(dataset.target_test_history)
+if train_history.index[-1] >= test_history.index[0]:
+    raise ValueError("ARIMA requires strictly separated train/test histories")
+forecast_history = pd.concat([train_history, test_history]).asfreq("h")
+test_predictions = rolling_forecasts(
+    final_model, forecast_history, test_rows["timestamp"]
+)
+final_progress.update()
+final_progress.close()
+display(pd.DataFrame([final_fit_details]))
+(
+    aggregate_metrics,
+    per_horizon_metrics,
+    regime_definition,
+    regime_aggregate_metrics,
+    regime_horizon_metrics,
+) = sealed_test_tables(
+    test_rows[TARGET_COLUMNS],
+    test_predictions,
+    dataset=dataset,
+    target_columns=TARGET_COLUMNS,
+    station_id=TARGET_STATION_ID,
+)
+sealed_test_ended_at_ms = time_ns() // 1_000_000
+prediction_table = prediction_preview(
+    test_rows, test_predictions, target_columns=TARGET_COLUMNS
+)
+display(aggregate_metrics)
+display(per_horizon_metrics)
+display(prediction_table.head(PREDICTION_PREVIEW_ROWS))
+\end{minted}
