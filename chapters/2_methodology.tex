@@ -229,8 +229,7 @@ The full \ac{CV} is done for each searched hyperparameter configuration and feat
 
 Among the tuned models, only \ac{ARIMA} is not trained on all feature subsets, since \ac{ARIMA} is a univariate model it uses only the target station water level as an input. Ridge regression, \ac{ARIMA} and \ac{ARIMAX} are tuned using grid search, while XGBoost, Extra Trees, \ac{MLP} and \ac{RNN} are tuned using random search. The persistence baseline is not tuned. \cite{bergstraRandomSearchHyperParameter2012, feurerHyperparameterOptimization2019}
 
-MLflow is used to manage the experiments and track the results. After the \ac{CV} the best model is selected based on the mean \ac{RMSE} across all folds.
-% TODO GRID SEARCH + Randomized grid search
+MLflow is used to manage the experiments and track the results. After the \ac{CV} the best hyperparameters and model configuration is selected based on the mean \ac{RMSE} across all folds, which is then retrained on the full training set before being evaluated on the test set. The final model will be the one with the best performance on the test set.
 
 
 %\cite{cerqueiraEvaluatingTimeSeries2020}.

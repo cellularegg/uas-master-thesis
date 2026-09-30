@@ -55,9 +55,9 @@ The heatmap in \autoref{fig:weather-future-change-pearson} shows the Pearson cor
 
 
 \section{Model Performance}
-% Compare all model performances and select best model
+% Compare all model performances
 \subsection{\acl{CV} Model Comparison}
-\autoref{tab:hyperparameter-tuning-results} shows the best performance for each model and its corresponding feature subset and hyperparameters. Overall the model with the lowest \ac{RMSE} is XGBoost with a \ac{CV} \ac{RMSE} of $12.43$. The baseline model, persistence, has a \ac{CV} \ac{RMSE} of $18.13$, which is significantly worse than all other models. \ac{RNN} and \ac{MLP} also perform similarly well with a \ac{CV} \ac{RMSE} of about $0.15$ and $0.21$ cm higher than XGBoost, based on the unrounded scores. Extra Trees and Ridge perform worse than the other models, both with a \ac{CV} \ac{RMSE} of about $1$ higher than XGBoost. Extra Trees is the only model where the best feature subset is not using all features (``Full''), with the exception of RNN which was only trained on the raw all stations feature subset. The definition of the feature subsets can be found in \autoref{sec:appendix-forecast-analysis} in \autoref{tab:feature-subset-definitions}. So Extra Trees does not benefit from the engineered features, while the other models do. The full list of searched hyperparameter spaces can be found in \autoref{sec:hyperparameter-search-spaces}.
+\autoref{tab:hyperparameter-tuning-results} shows the best performance for each model and its corresponding feature subset and hyperparameters. Overall the model with the lowest \ac{RMSE} is \ac{RNN} with a \ac{CV} \ac{RMSE} of $12.02$. The baseline model, persistence, has a \ac{CV} \ac{RMSE} of $18.13$, which is significantly worse than all other models. XGBoost and \ac{MLP} also perform similarly well with a \ac{CV} \ac{RMSE} of $12.43$ and $12.64$, respectively. Extra Trees and Ridge perform worse, both with a \ac{CV} \ac{RMSE} of about $1.3$ cm higher than RNN. \ac{ARIMAX} and \ac{ARIMA} achieve a \ac{CV} \ac{RMSE} of $15.65$ and $16.42$, respectively, performing better than persistence but worse than the models. For Extra Trees and RNN, the best feature subset does not use all features (``Full''); ARIMA uses only the target-station water level. The definition of the feature subsets can be found in \autoref{sec:appendix-forecast-analysis} in \autoref{tab:feature-subset-definitions}. The full list of searched hyperparameter spaces can be found in \autoref{sec:hyperparameter-search-spaces}.
 \begin{table}[htbp]
   \centering
   \input{tables/hyperparameter_tuning_results.tex}
@@ -65,8 +65,7 @@ The heatmap in \autoref{fig:weather-future-change-pearson} shows the Pearson cor
 \end{table}
 
 
-\autoref{fig:aggregate-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} of all trained models by displaying the mean and the standard deviation across the 5 folds. The standard deviation is used to indicate the variability of the model performance across different folds. XGBoost has the lowest mean \ac{CV} \ac{RMSE} and the lowest standard deviation, indicating that its performance varies less across the folds than the other models. Besides the persistence baseline, RNN has the highest standard deviation ($2.17$), indicating that its performance varies more across the folds. This further supports the selection of XGBoost as the best performing model, as it not only achieves the lowest mean \ac{CV} \ac{RMSE}, but also has the lowest spread of performance across the folds, indicating that it is more robust and consistent in its predictions.
-\todo{Include ARIMA and ARIMAX and update RNN values}
+\autoref{fig:aggregate-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} of all trained models by displaying the mean and the standard deviation across the 5 folds. The standard deviation is used to indicate the variability of the model performance across different folds. RNN has the lowest mean \ac{CV} \ac{RMSE} ($12.02$), while XGBoost has the lowest standard deviation ($1.78$), indicating that its performance varies less across the folds than the other models. Besides the persistence baseline, ARIMAX has the highest standard deviation ($2.41$), indicating that its performance varies more across the folds.
 % Model RNN: RMSE=12.02 ± 1.96
 % Model XGBoost: RMSE=12.43 ± 1.78
 % Model MLP: RMSE=12.64 ± 2.15
@@ -81,16 +80,16 @@ The heatmap in \autoref{fig:weather-future-change-pearson} shows the Pearson cor
   \includegraphics[width=\textwidth]{figures/aggregate_cross_validation_rmse.pdf}
   \caption{Aggregate \ac{CV} \ac{RMSE} of all trained models. The marker shows the mean across 5 folds; the error bar shows the standard deviation across the folds.}\label{fig:aggregate-cross-validation-rmse}
 \end{figure}
-\subsection{Model Selection and Test Performance}
-\autoref{tab:sealed-test-performance-all-models} shows the performance of each model on the sealed test set. Based on the \ac{CV} \ac{RMSE} the chosen model is XGBoost. The test-set performance of XGBoost is comparatively worse than its \ac{CV} performance, with an \ac{RMSE} of $13.90$. This performance decrease may partly be explained by a distribution shift between the training and test sets, as the September 2024 flood represents a previously unseen extreme event. Under these conditions, XGBoost appears to generalize less effectively to previously unseen water level ranges than the \ac{MLP} and \ac{RNN} models. The \ac{MLP} achieves a lower test-set \ac{RMSE} ($12.11$) than XGBoost ($13.90$), although the performance of the \ac{MLP} \ac{CV} \ac{RMSE} is higher ($12.64$). Nevertheless, XGBoost remains the selected model because it performed best based on the predefined \ac{CV} criterion. Selecting the \ac{MLP} only because of the better test-set result would mean that the sealed test set is used for model selection instead of only for the final evaluation. Additionally, the better performance of the \ac{MLP} on the test set could also be due to the specific characteristics of this test period and does not necessarily mean that the model generally performs better. Therefore, XGBoost remains the selected model independent of the observed test-set performance.
-\todo{Include ARIMA and ARIMAX and update RNN values}
+\subsection{Test Performance}
+\autoref{tab:sealed-test-performance-all-models} shows the performance of each model on the sealed test set. The test-set \ac{RMSE} of RNN is $12.96$, compared to $12.02$ in \ac{CV}. The \ac{MLP} achieves a lower test-set \ac{RMSE} ($12.11$), although its \ac{CV} \ac{RMSE} is higher ($12.64$). XGBoost achieves a test-set \ac{RMSE} of $13.90$, compared to $12.43$ in \ac{CV}. This performance decrease may partly be explained by the September 2024 flood, as it represents a previously unseen extreme event. Under these conditions, e.g. XGBoost appears to generalize less effectively to previously unseen water level ranges than the \ac{MLP} and \ac{RNN} models. \ac{ARIMAX} and \ac{ARIMA} achieve a test-set \ac{RMSE} of $14.15$ and $15.99$, respectively.The flood is relevant to the evaluation because forecast errors during high water are important for the intended use of the models. The further investigation will focus on the models with the lowest test-set \ac{RMSE}, which are \ac{MLP} and Ridge. 
+
 \begin{table}[htbp]
   \centering
   \input{tables/sealed_test_performance_all_models.tex}
-  \caption{Sealed-test \ac{MAE}, \ac{RMSE} and \ac{ME}, aggregated across the full 24-hour forecast horizon, for every model.}\label{tab:sealed-test-performance-all-models}
+  \caption{Sealed-test \ac{MAE}, \ac{RMSE} and \ac{ME}, aggregated across the full 24-hour forecast horizon, for every model, each followed by its difference from the mean \ac{CV} value (sealed test minus \ac{CV}).}\label{tab:sealed-test-performance-all-models}
 \end{table}
 \section{Feature Effects}
-This section covers the effects of different feature subsets on the model performance. \autoref{fig:feature-subset-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} for XGBoost across the different feature subsets. All feature subsets are shown in \autoref{tab:feature-subset-definitions}. The worst performance is achieved when only using the target station's measurements without any weather data or upstream stations ($\text{\ac{RMSE}} = 16.76 \pm 3.06$). The best performance is achieved when using all features; however, without the engineered features the performance is only slightly worse ($\text{\ac{RMSE}} = 12.90 \pm 1.79$). The engineered features therefore only provide a small improvement in performance. This small improvement suggests that most of the information is already contained in the raw measurements and the engineered features do not add much additional information. Especially not for a model like XGBoost, which is able to learn complex relationships between the features and the target variable. For simpler models like Ridge the engineered features provide a larger improvement in performance. \todo{rework to be about MLP RNN and Ridge}
+This section covers the effects of different feature subsets on the model performance. \autoref{fig:feature-subset-cross-validation-rmse} shows the \ac{CV} \ac{RMSE} for \ac{MLP}, \ac{RNN} and Ridge across the different feature subsets. All feature subsets are shown in \autoref{tab:feature-subset-definitions}. For all three models, the worst performance is achieved when only using the target station's measurements without any weather data or upstream stations. For \ac{MLP}, the best performance is achieved when using all features ($\text{\ac{RMSE}} = 12.64 \pm 2.15$); however, without the engineered features the performance is only slightly worse ($\text{\ac{RMSE}} = 12.65 \pm 1.78$). The engineered features therefore only provide a small improvement in performance for \ac{MLP}. This small improvement suggests that most of the information needed by \ac{MLP} is already contained in the raw measurements and the engineered features do not add much additional information. For simpler models like Ridge the engineered features provide a larger improvement in performance, with a \ac{RMSE} of $13.32 \pm 2.08$ when using all features, compared to $14.08 \pm 2.16$ without the engineered features. For \ac{RNN}, the best performance is achieved when only using the current water levels from all stations ($\text{\ac{RMSE}} = 12.02 \pm 1.96$), while using all features leads to a higher \ac{RMSE} of $13.03 \pm 2.57$. Thus using more features does not always lead to a better model performance.
 % Model MLP, subset full: RMSE=12.64 ± 2.15
 % Model MLP, subset all_station_hydrology_quality_time: RMSE=14.42 ± 2.21
 % Model MLP, subset raw_all_stations: RMSE=12.65 ± 1.78
@@ -114,10 +113,16 @@ This section covers the effects of different feature subsets on the model perfor
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/feature_subset_cross_validation_rmse.pdf}
-  \caption{\ac{CV} \ac{RMSE} by input feature subset for the best candidate within each subset. Markers show the mean across 5 folds, error bars show the fold-to-fold standard deviation, and the dashed line shows the persistence baseline.}\label{fig:feature-subset-cross-validation-rmse}
+  \caption{\ac{CV} \ac{RMSE} by input feature subset for the best candidate within each subset. Markers show the mean across 5 folds, error bar caps show fold-to-fold standard deviation and the dashed line shows the persistence baseline.}\label{fig:feature-subset-cross-validation-rmse}
 \end{figure}
 
-\autoref{fig:feature-subset-cross-validation-rmse} shows the change in \ac{CV} \ac{RMSE} for XGBoost across the different feature subsets, with regards to adding upstream stations and weather data. The addition of upstream stations leads to a decrease in \ac{CV} \ac{RMSE} of $12.7\%$. With the addition of weather data, the \ac{CV} \ac{RMSE} decreases by $6.5\%$. Adding both upstream stations and weather data leads to a decrease in \ac{CV} \ac{RMSE} of $25.8\%$. This leads to the conclusion that both upstream stations and weather data are important for improving the model performance, with upstream stations having a larger impact on the performance than weather data. This trend can be seen in all models (trained with different feature subsets), which can be seen in \autoref{sec:feature-subset-performance-comparison}. \todo{Change to MLP and Ridge}
+\autoref{tab:feature-subset-performance-comparison-mlp} and \autoref{tab:feature-subset-performance-comparison-ridge} show the change in \ac{CV} \ac{RMSE} for \ac{MLP} and Ridge across the different feature subsets, with regards to adding upstream stations and weather data. Compared to using only the target station's features without weather data, the addition of upstream stations leads to a decrease in \ac{CV} \ac{RMSE} of $12.3\%$ for \ac{MLP} and $10.8\%$ for Ridge. With the addition of weather data, the \ac{CV} \ac{RMSE} decreases by $3.2\%$ for \ac{MLP} and $4.3\%$ for Ridge. Adding both upstream stations and weather data leads to a decrease in \ac{CV} \ac{RMSE} of $23.1\%$ for \ac{MLP} and $17.6\%$ for Ridge. This leads to the conclusion that both upstream stations and weather data improve the model performance, with upstream stations having a larger impact on the performance than weather data. This trend can be seen in all models trained with different feature subsets, which can be seen in \autoref{sec:feature-subset-performance-comparison}.
+
+\begin{table}[htbp]
+  \centering
+  \input{tables/feature_subset_performance_comparison_mlp.tex}
+  \caption{\ac{CV} \ac{RMSE} for MLP for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-mlp}
+\end{table}
 
 \begin{table}[htbp]
   \centering
@@ -125,11 +130,7 @@ This section covers the effects of different feature subsets on the model perfor
   \caption{\ac{CV} \ac{RMSE} for Ridge for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-ridge}
 \end{table}
 
-\begin{table}[htbp]
-  \centering
-  \input{tables/feature_subset_performance_comparison_mlp.tex}
-  \caption{\ac{CV} \ac{RMSE} for MLP for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-mlp}
-\end{table}
+
 % \subsection{Effect of Weather Data}
 
 \section{Forecast Analysis}

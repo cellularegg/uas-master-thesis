@@ -1,21 +1,21 @@
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-\textbf{Model} & \textbf{RMSE} & \textbf{MAE} & \textbf{ME} \\
+\textbf{Model} & \textbf{RMSE} & \textbf{RMSE vs. CV} & \textbf{MAE} & \textbf{MAE vs. CV} & \textbf{ME} & \textbf{ME vs. CV} \\
 \midrule
-MLP & $12.11$ & $7.05$ & $1.91$ \\
+MLP & $12.11$ & $-0.53$ & $7.05$ & $+0.15$ & $1.91$ & $+2.38$ \\
 \addlinespace
-Ridge & $12.85$ & $7.45$ & $0.72$ \\
+Ridge & $12.85$ & $-0.47$ & $7.45$ & $+0.26$ & $0.72$ & $+1.23$ \\
 \addlinespace
-RNN & $12.96$ & $6.50$ & $-0.58$ \\
+RNN & $12.96$ & $+0.94$ & $6.50$ & $+0.21$ & $-0.58$ & $-0.95$ \\
 \addlinespace
-XGBoost & $13.90$ & $7.24$ & $0.50$ \\
+XGBoost & $13.90$ & $+1.47$ & $7.24$ & $+0.41$ & $0.50$ & $+0.91$ \\
 \addlinespace
-Extra Trees & $14.14$ & $7.36$ & $0.39$ \\
+Extra Trees & $14.14$ & $+0.87$ & $7.36$ & $+0.33$ & $0.39$ & $+0.65$ \\
 \addlinespace
-ARIMAX & $14.15$ & $7.48$ & $-0.61$ \\
+ARIMAX & $14.15$ & $-1.50$ & $7.48$ & $-0.22$ & $-0.61$ & $-0.14$ \\
 \addlinespace
-ARIMA & $15.99$ & $9.68$ & $0.84$ \\
+ARIMA & $15.99$ & $-0.43$ & $9.68$ & $+0.69$ & $0.84$ & $+0.63$ \\
 \addlinespace
-Persistence & $16.00$ & $8.75$ & $-0.01$ \\
+Persistence & $16.00$ & $-2.13$ & $8.75$ & $-0.62$ & $-0.01$ & $-0.00$ \\
 \bottomrule
 \end{tabular}
