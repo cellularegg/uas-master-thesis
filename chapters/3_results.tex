@@ -134,7 +134,7 @@ This section covers the effects of different feature subsets on the model perfor
 % \subsection{Effect of Weather Data}
 
 \section{Forecast Analysis}
-This section analyzes the forecasts of the model selected based on the \ac{CV}, XGBoost, on the sealed test set. \autoref{fig:xgboost-best-forecast-window} shows the best 24-hour forecast on the sealed test set, with a \ac{RMSE} of $1.03$. The forecast is able to capture the overall trend within the 24-hour window pretty well. In contrast \autoref{fig:xgboost-worst-forecast-window} shows the worst 24-hour forecast among test-set issue times with complete, non-imputed observations from 48 hours before to 48 hours after the issue time, with a \ac{RMSE} of $135.71$. Across the entire sealed test set, the highest 24-hour forecast \ac{RMSE} is $137.82$, for the forecast issued on September 15, 2024 at 22:00 UTC. This forecast is excluded from the figure because it does not meet the observation requirement. In the displayed forecast, the model does not capture the trend at all and is off by a large margin. This scenario is especially difficult for the model to predict since it is right before a sudden spike in water level, with the recent water level measurements decreasing. Thus the model predicts a further decrease in water level, while the actual water level increases sharply. \todo{Cahnge forecast analysis to MLP and Ridge}
+This section analyzes the forecasts of the \ac{MLP} and Ridge models on the sealed test set. \autoref{fig:mlp-best-forecast-window} and \autoref{fig:ridge-best-forecast-window} show the best 24-hour forecasts among test-set issue times with complete, non-imputed observations from 48 hours before to 48 hours after the issue time, with a \ac{RMSE} of $0.97$ for \ac{MLP} and $0.91$ for Ridge. Both forecasts are able to capture the overall trend within the 24-hour window pretty well. In contrast \autoref{fig:mlp-worst-forecast-window} and \autoref{fig:ridge-worst-forecast-window} show the worst 24-hour forecasts among issue times meeting the same observation requirement, with a \ac{RMSE} of $122.41$ for \ac{MLP} and $136.86$ for Ridge. Both forecasts are issued before the same sudden spike in water level in July 2025, but at different issue times. In the displayed forecasts, the models do not capture the trend accurately and are off by a large margin. This scenario is especially difficult for the models to predict since the recent water level measurements are decreasing. Thus Ridge predicts a further decrease in water level, while \ac{MLP} predicts only a small increase and the actual water level increases sharply.
 % Best MLP issue timestamp with complete, non-imputed context: 2026-02-03T01:00:00+00:00
 % Worst MLP issue timestamp with complete, non-imputed context: 2025-07-29T01:00:00+00:00
 % Best Ridge issue timestamp with complete, non-imputed context: 2025-04-28T19:00:00+00:00
@@ -164,7 +164,7 @@ This section analyzes the forecasts of the model selected based on the \ac{CV}, 
 \end{figure}
 
 
-\autoref{fig:xgboost-h1-forecast-timeline} shows the H+1 forecast of the XGBoost model against the observed water level at the target station from 2024-09-10 to 2024-09-22. This is the flood period in September 2024, which exceeds the highest water level in the training set. It can be clearly seen that the model is struggling to predict those extreme water levels above 600 cm accurately. The forecasted values barely exceed 600 cm, while the actual water level reaches water levels above 700 cm. \todo{Remove this section??? Since it is not applicable anymore?}
+\autoref{fig:h1-forecast-timeline} shows the H+1 forecasts of the \ac{MLP} and Ridge models against the observed water level at the target station from 2024-09-10 to 2024-09-22. This is the flood period in September 2024, which exceeds the highest water level in the training set. It can be clearly seen that both models are able to capture the overall trend even at water levels above 700 cm. However, \ac{MLP} overestimates the highest peak, while Ridge stays closer to the actual water level. Thus both models are able to predict these extreme water levels quite well at H+1, although this does not mean that they perform equally well at longer lead times.
 
 \begin{figure}[htbp]
   \centering
@@ -172,11 +172,43 @@ This section analyzes the forecasts of the model selected based on the \ac{CV}, 
   \caption{MLP and Ridge H+1 forecasts against the observed target station water level from 2024-09-10 to 2024-09-22.}\label{fig:h1-forecast-timeline}
 \end{figure}
 
+\autoref{fig:bad-forecast-window-comparison} shows the 24-hour forecast issued at 2024-09-17 00:00 UTC, during the plateau of the flood event. This illustrates an example for both \ac{MLP} and Ridge models during plateau phases of flood events. The models tend to predict an increase in water level for the first few hours, in this case up to H+5 for \ac{MLP} and H+6 for Ridge, and a decrease for the following hours, even though the observed water level remains relatively constant. Thus both models overestimate the water level at first and then underestimate it. \todo{refine this?}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/bad_forecast_window_comparison.pdf}
+  \caption{24-hour MLP and Ridge forecasts issued at 2024-09-17 00:00 UTC on the sealed test set, with the observed target station water level.}\label{fig:bad-forecast-window-comparison}
+\end{figure}
+
 
 \subsection{Performance Across Forecast Lead Times}
-\autoref{fig:sealed-test-performance-by-horizon} shows the test set \ac{RMSE} across the 24-hour forecast horizon for the selected XGBoost model and the persistence baseline. The persistence model performs better for the first five hours, with the XGBoost model performing better for the remaining forecast horizon. At H+1 persistence has a \ac{RMSE} of only $2.86$ while XGBoost has a \ac{RMSE} of $9.18$. One reason for this is the flood in September 2024, for which XGBoost mostly underestimates the water level, in some cases by more than 100 cm (as shown in \autoref{fig:xgboost-h1-forecast-timeline}). This error leads to a higher \ac{RMSE} for XGBoost in the first few hours. For the remaining forecast horizon hours the \ac{RMSE} gets larger for both models, while XGBoost's \ac{RMSE} increases at a slower rate than persistence, leading to a better performance for XGBoost for the remaining forecast horizon. At H+24 persistence has a \ac{RMSE} of $23.52$ while XGBoost has a \ac{RMSE} of $19.97$. A decrease in performance with increasing forecast horizon is expected, as forecast uncertainty generally increases with lead time. A detailed predicted vs actual scatterplot per horizon can be seen in \autoref{fig:xgboost-actual-vs-predicted-by-horizon} (in \autoref{sec:appendix-forecast-analysis}). This further strengthens the assumption that the model struggles to predict extreme water levels, as it underestimates the peaks across all horizons.
-\todo{Rework this section to be about MLP and Ridge performance across forecast lead times.}
-% The worse performance in lead times 1-5 is because the flood in September 2025, 
+% | Hour  | MLP_rmse | Ridge_rmse | Persistence_rmse |
+% | ----: | -------: | ---------: | ---------------: |
+% |     1 |     3.44 |       2.61 |             2.86 |
+% |     2 |     4.03 |       3.82 |             4.44 |
+% |     3 |     4.48 |       4.81 |             5.83 |
+% |     4 |     5.01 |       5.67 |             7.11 |
+% |     5 |     5.61 |       6.48 |             8.32 |
+% |     6 |     6.26 |       7.25 |             9.47 |
+% |     7 |     6.93 |       8.00 |            10.56 |
+% |     8 |     7.62 |       8.75 |            11.59 |
+% |     9 |     8.34 |       9.52 |            12.57 |
+% |    10 |     9.11 |      10.28 |            13.51 |
+% |    11 |     9.89 |      11.06 |            14.40 |
+% |    12 |    10.62 |      11.82 |            15.26 |
+% |    13 |    11.40 |      12.57 |            16.07 |
+% |    14 |    12.07 |      13.30 |            16.86 |
+% |    15 |    12.88 |      14.02 |            17.62 |
+% |    16 |    13.62 |      14.70 |            18.35 |
+% |    17 |    14.29 |      15.35 |            19.05 |
+% |    18 |    15.04 |      15.98 |            19.73 |
+% |    19 |    15.76 |      16.60 |            20.38 |
+% |    20 |    16.40 |      17.18 |            21.02 |
+% |    21 |    17.12 |      17.75 |            21.65 |
+% |    22 |    17.86 |      18.31 |            22.28 |
+% |    23 |    18.58 |      18.88 |            22.90 |
+% |    24 |    19.32 |      19.47 |            23.52 |
+\autoref{fig:sealed-test-performance-by-horizon} shows the test set \ac{RMSE} across the 24-hour forecast horizon for the \ac{MLP} and Ridge models and the persistence baseline. The persistence model performs better than \ac{MLP} only at H+1, while Ridge performs better than persistence across the entire forecast horizon. At H+1 persistence has a \ac{RMSE} of $2.86$, while \ac{MLP} has a \ac{RMSE} of about $3.44$ and Ridge of about $2.61$. Ridge performs better than \ac{MLP} for the first two hours, with \ac{MLP} performing better for the remaining forecast horizon. For the remaining forecast horizon hours the \ac{RMSE} gets larger for all three models, while both \ac{MLP} and Ridge have a lower \ac{RMSE} than persistence. At H+24 persistence has a \ac{RMSE} of $23.52$, while \ac{MLP} has a \ac{RMSE} of about $19.32$ and Ridge of about $19.47$. A decrease in performance with increasing forecast horizon is expected, as forecast uncertainty generally increases with lead time. Detailed predicted vs actual scatterplots per horizon can be seen in \autoref{fig:mlp-actual-vs-predicted-by-horizon} and \autoref{fig:ridge-actual-vs-predicted-by-horizon} (in \autoref{sec:appendix-forecast-analysis}). These show a larger spread of errors with increasing lead time, including underestimation of high water levels at longer lead times.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/sealed_test_performance_by_horizon.pdf}
@@ -184,13 +216,14 @@ This section analyzes the forecasts of the model selected based on the \ac{CV}, 
 \end{figure}
 
 \subsection{Performance Across Water Level Regimes}
-\autoref{tab:performance-by-water-level-regime} shows the test set \ac{MAE}, \ac{RMSE}, and \ac{ME} for XGBoost for $Q_1$--$Q_4$. The thresholds are calculated based on the training set. Therefore, the number of observations in each regime in the test set does not necessarily correspond to 25\% of the total. The unequal distribution across the regimes indicates that the water level distribution in the test set differs from the training set. The \ac{RMSE} is lowest in the first quartile, with a value of $6.03$. In the first three quartiles the model tends to overestimate, while predictions in the fourth quartile are underestimated. The first three quartiles make up about 83\% of the total scored forecasts, while the fourth quartile makes up about 17\%. Thus for the majority of scored forecasts the RMSE is below $11.01$. \todo{change this}
+\autoref{tab:performance-by-water-level-regime} shows the test set \ac{MAE}, \ac{RMSE} and \ac{ME} for \ac{MLP} and Ridge for $Q_1$--$Q_4$. The thresholds are calculated based on the training set. Therefore, the number of observations in each regime in the test set does not necessarily correspond to 25\% of the total. The unequal distribution across the regimes indicates that the water level distribution in the test set differs from the training set. The \ac{RMSE} is lowest in the first quartile, with a value of $6.55$ for \ac{MLP} and $7.38$ for Ridge. In the first three quartiles both models tend to overestimate, while predictions in the fourth quartile are underestimated on average. The first three quartiles make up about 83\% of the total scored forecasts, while the fourth quartile makes up about 17\%. Thus for the majority of scored forecasts the \ac{RMSE} in each regime is at most $11.62$ for \ac{MLP} and $11.07$ for Ridge. In the fourth quartile the \ac{RMSE} increases to $23.18$ for \ac{MLP} and $24.91$ for Ridge. \ac{MLP} has a lower \ac{RMSE} in all quartiles except the third quartile, where Ridge performs slightly better.
 \begin{table}[htbp]
   \centering
   \input{tables/performance_by_water_level_regime.tex}
   \caption{Test \ac{MAE}, \ac{RMSE}, and \ac{ME} by water level regime for \ac{MLP} and Ridge. The $Q_1$--$Q_4$ bounds are derived from training measurements. N counts scored forecast values.}\label{tab:performance-by-water-level-regime}
 \end{table}
-\autoref{tab:high-water-alarm-level-performance} shows the test set performance of XGBoost for all scored forecasts and where the actual level is at or above FloodAlert's threshold of 545 cm. The number of scored forecast values in the test set with an actual level at or above the threshold is 7,414, which is about $1.72\%$ of the total scored forecasts. Thus the share of high water events is pretty low. Compared to the overall test set performance, the \ac{RMSE} and \ac{MAE} are significantly higher for the high water events, with a \ac{RMSE} of $71.44$, about a five times increase, and a \ac{MAE} of $53.92$, which is about seven times higher. Although the overall \ac{ME} of $0.5$ indicates little systematic bias across the complete test set, the alarm-level \ac{ME} of $-53.08$ shows that XGBoost systematically underpredicts high water levels. Furthermore the alarm level \ac{MAE} is very close to the absolute \ac{ME}, which indicates that errors in this regime are predominantly underestimations, rather than symmetric errors. \todo{change this}
+
+\autoref{tab:high-water-alarm-level-performance} shows the test set performance of \ac{MLP} and Ridge for all scored forecasts and where the actual level is at or above FloodAlert's threshold of 545 cm. The number of scored forecast values in the test set with an actual level at or above the threshold is 7,414, which is about $1.72\%$ of the total scored forecasts. Thus the share of high water events is pretty low. Compared to the overall test set performance, the \ac{RMSE} and \ac{MAE} are significantly higher for the high water events, with a \ac{RMSE} of $47.33$ for \ac{MLP} and $47.92$ for Ridge, about a four times increase, and a \ac{MAE} of $32.08$ for \ac{MLP} and $30.49$ for Ridge, which is about four to five times higher. Although the overall \ac{ME} of $1.91$ for \ac{MLP} and $0.72$ for Ridge indicates a small positive bias across the complete test set, the alarm-level \ac{ME} of $-23.51$ for \ac{MLP} and $-14.09$ for Ridge shows that both models systematically underpredict high water levels on average. Furthermore the alarm level \ac{MAE} is higher than the absolute \ac{ME} for both models, which indicates that errors in this regime include both underestimations and overestimations. Ridge has a lower alarm-level \ac{MAE} and a smaller negative bias, while \ac{MLP} has a slightly lower alarm-level \ac{RMSE}.
 \begin{table}[htbp]
   \centering
   \input{tables/high_water_alarm_level_performance.tex}
