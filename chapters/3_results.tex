@@ -230,7 +230,9 @@ This section analyzes the forecasts of the \ac{MLP} and Ridge models on the seal
   \caption{Test set performance of \ac{MLP} and Ridge for all scored forecasts and where the actual level is at or above FloodAlert's threshold (545 cm). N denotes scored forecasts.}\label{tab:high-water-alarm-level-performance}
 \end{table}
 
-\todo{Write a short paragraph why MLP was seleted as the final model}
+\subsection{Model Selection}
+The final model selection is based on the independent test set, while \ac{CV} is used to select the feature subsets and hyperparameters for each model family. Although \ac{RNN} achieves the lowest \ac{CV} \ac{RMSE}, \ac{MLP} performs better on the test set. Its test-set \ac{RMSE} is $12.11$ cm, compared to $12.85$ cm for Ridge and $12.96$ cm for \ac{RNN}. Thus \ac{MLP} achieves the lowest test-set \ac{RMSE} among all evaluated models. Compared to the persistence baseline, with a test-set \ac{RMSE} of $16.00$ cm, this corresponds to a decrease of about $24.3\%$. Therefore, \ac{MLP} is selected as the final model, as it provides the lowest estimate of generalization error according to the predefined \ac{RMSE} criterion.
+
 
 \section{Deployment}
 \subsection{Architecture}
