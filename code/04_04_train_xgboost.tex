@@ -1,10 +1,6 @@
 \section{04\_04\_train\_xgboost.ipynb}
 
 \begin{minted}{python}
-raise ValueError("Training should not be accidentally run in this notebook.")
-\end{minted}
-
-\begin{minted}{python}
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 NOTEBOOK_EXECUTION_UUID = str(uuid4())
 PROCESSED_DIR = Path("data/processed/joined")
