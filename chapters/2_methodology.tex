@@ -177,7 +177,7 @@ The general approach is to use a \ac{MIMO} strategy. Except for \ac{ARIMA} and \
   X_t \longrightarrow \text{Model} \longrightarrow [\hat{y}_{t+1}, \hat{y}_{t+2}, \ldots, \hat{y}_{t+H}]
   \label{eq:mimo-forecasting}
 \end{equation}
-Another reason for choosing a \ac{MIMO} approach is to reduce the number of models, thus also reducing training time and complexity of the system. If the goal is to roll out the system to multiple stations, training and inference time should be kept as low as possible.
+% Another reason for choosing a \ac{MIMO} approach is to reduce the number of models, thus also reducing training time and complexity of the system. If the goal is to roll out the system to multiple stations, training and inference time should be kept as low as possible.
 
 \ac{ARIMA} and \ac{ARIMAX} do not follow the \ac{MIMO} strategy. They use a recursive strategy, which means that they predict one time step at a time and use the previous predictions as inputs for the next time step. For \ac{ARIMAX} only the target station and calendar predictors are updated during the forecast, the predictors from other stations and weather keep their values at the forecast origin. These models are included as classical statistical models that use a recursive strategy.
 
@@ -202,23 +202,23 @@ The full \ac{CV} is done for each searched hyperparameter configuration and feat
         & All available input features.
         & Nothing. \\
         \addlinespace
-        All-station hydrology, quality, and time
+        All-station hydrology, quality \& time
         & Hydrological variables, data-quality indicators, and temporal features from all retained stations.
         & Weather variables. \\
         \addlinespace
-        Raw all stations
+        Raw, all stations
         & Raw water level, imputation indicator, precipitation, and temperature variables from all retained stations.
         & Engineered lag, rolling, and temporal features. \\
         \addlinespace
-        Target station full
+        Target-station full
         & All available input features from the target station.
         & Predictors from upstream stations. \\
         \addlinespace
-        target station hydrology, quality, and time
+        Target-station hydrology, quality \& time
         & Hydrological variables, data-quality indicators, and temporal features from the target station.
         & Weather variables and predictors from upstream stations. \\
         \addlinespace
-        Current water levels from all stations
+        Current water levels, all stations
         & Current water-level measurements from all retained stations.
         & Weather variables, quality indicators, temporal features, and all engineered features. \\
         \bottomrule
