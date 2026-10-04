@@ -81,6 +81,7 @@
 \begin{document}
 
 \maketitle
+\acresetall % expand acronyms again on first use in the main text
 % TODO Add math mode to all columns containing decimal numbers in tables.
 % TODO Format whole document
 % TODO check where Table 10 is. -> AI Usage table
@@ -114,6 +115,7 @@
 
 % List of AI tools used
 \listaitools
+\addtocounter{table}{-1} % AI tools table is not captioned, keep table numbering continuous
 \clearpage
 
 \phantomsection
