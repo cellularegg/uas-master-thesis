@@ -26,7 +26,9 @@
 %
 % Version V2.24 from 2024-12-19, otrebski
 %
+\PassOptionsToPackage{ngerman,english}{babel}
 \documentclass[Master,english,IEEE]{twbook}
+\babelhyphenation[ngerman]{FloodAlert}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{todonotes}
@@ -72,9 +74,9 @@
 %\secondsupervisor[Reviewer]{Title First Name Last Name, Degree}
 %\secondsupervisor[Reviewers]{Title First Name Last Name, Degree}
 \place{Vienna}
-\kurzfassung{\input{chapters/0_kurzfassung.tex}}
+\kurzfassung{\begin{otherlanguage}{ngerman}\input{chapters/0_kurzfassung.tex}\end{otherlanguage}}
 \schlagworte{Flusspegelvorhersage, Kurzzeitprognose, Zeitreihenprognose, Maschinelles Lernen, Modellvergleich, Donau}
-\outline{\input{chapters/0_abstract.tex}}
+\outline{\acresetall\input{chapters/0_abstract.tex}}
 \keywords{river water level forecasting, short-term forecasting, time series forecasting, machine learning, model comparison, Danube River}
 %\acknowledgements{\blindtext}
 
@@ -82,9 +84,6 @@
 
 \maketitle
 \acresetall % expand acronyms again on first use in the main text
-% TODO Add math mode to all columns containing decimal numbers in tables.
-% TODO Format whole document
-% TODO check where Table 10 is. -> AI Usage table
 \include{chapters/1_intro.tex}
 \include{chapters/2_methodology.tex}
 \include{chapters/3_results.tex}
@@ -93,10 +92,10 @@
 % Document your AI tools here. They will automatically be added to a table.
 % \aitoolentry{DeepL Translate}{Translation of an article in English}{Source (XXX), Chapter X on page X-X}
 % \aitoolentry{Chat GPT 4.0}{Grammar and Spelling}{"Please list issues with spelling and grammar in the following text: ...", Entire document}
-\aitoolentry{ChatGPT ($5.6$ Sol, Terra and Luna)}{Coding Assistance}{Code review, code completion and code generation}
-\aitoolentry{Claude (Sonnet 5, Opus 5)}{Coding Assistance}{Code review, code completion and code generation}
-\aitoolentry{ChatGPT ($5.6$ Sol, Terra and Luna)}{Grammar and Spelling}{Grammar, spelling and helping with wording \& translation throughout the entire document}
-\aitoolentry{Claude (Sonnet 5, Opus 5)}{Grammar and Spelling}{Grammar, spelling and helping with wording \& translation throughout the entire document}
+\aitoolentry{ChatGPT (5.6 \& 6 \& 6.1 Astra, Sol, Terra and Luna)}{Coding Assistance}{Code review, code completion and code generation}
+\aitoolentry{Claude (Sonnet 5 \& 5.5, Opus 5 \& 5.5)}{Coding Assistance}{Code review, code completion and code generation}
+\aitoolentry{ChatGPT (5.6 \& 6 \& 6.1 Astra, Sol, Terra and Luna)}{Grammar and Spelling}{Grammar, spelling and helping with wording \& translation throughout the entire document}
+\aitoolentry{Claude (Sonnet 5 \& 5.5, Opus 5 \& 5.5)}{Grammar and Spelling}{Grammar, spelling and helping with wording \& translation throughout the entire document}
 
 %
 % The lists begin here.
@@ -144,19 +143,23 @@
 %
 \clearpage
 \appendix
-\chapter{Appendix Forecast Analysis}
-\label{sec:appendix-forecast-analysis}
+\chapter{Additional Results}
+\label{sec:additional-results}
+
 The source code used in this thesis is available at: \url{https://github.com/cellularegg/uas-master-thesis-code}.
+\section{Forecast Analysis}
+\label{sec:forecast-analysis}
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/mlp_actual_vs_predicted_by_horizon.pdf}
-  \caption{Actual versus predicted water level on the sealed test set for the MLP model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:mlp-actual-vs-predicted-by-horizon}
+  \caption{Actual versus predicted water level on the sealed test set for the \ac{MLP} model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:mlp-actual-vs-predicted-by-horizon}
 \end{figure}
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/ridge_actual_vs_predicted_by_horizon.pdf}
   \caption{Actual versus predicted water level on the sealed test set for the Ridge model, shown separately for each of the 24 forecast horizons and pooled across all horizons (bottom right). The dashed diagonal marks perfect agreement.}\label{fig:ridge-actual-vs-predicted-by-horizon}
 \end{figure}
+\clearpage
 
 
 \section{Hyperparameter Search Spaces}
@@ -175,7 +178,7 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \begin{table}[htbp]
   \centering
   \input{tables/hyperparameter_search_space_mlp.tex}
-  \caption{MLP hyperparameter search space. Random search: 16 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-mlp}
+  \caption{\ac{MLP} hyperparameter search space. Random search: 16 candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-mlp}
 \end{table}
 
 \begin{table}[htbp]
@@ -187,13 +190,13 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \begin{table}[htbp]
   \centering
   \input{tables/hyperparameter_search_space_arima.tex}
-  \caption{ARIMA hyperparameter search space. Exhaustive grid: 52 (p, d, q) orders, target-station water level only.}\label{tab:hyperparameter-search-space-arima}
+  \caption{\ac{ARIMA} hyperparameter search space. Exhaustive grid: 52 (p, d, q) orders, target-station water level only.}\label{tab:hyperparameter-search-space-arima}
 \end{table}
 
 \begin{table}[htbp]
   \centering
   \input{tables/hyperparameter_search_space_arimax.tex}
-  \caption{ARIMAX hyperparameter search space. Exhaustive grid: 13 (p, d, q) orders x 6 feature subsets.}\label{tab:hyperparameter-search-space-arimax}
+  \caption{\ac{ARIMAX} hyperparameter search space. Exhaustive grid: 13 (p, d, q) orders x 6 feature subsets.}\label{tab:hyperparameter-search-space-arimax}
 \end{table}
 
 % \begin{table}[htbp]
@@ -211,9 +214,9 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \begin{table}[htbp]
   \centering
   \input{tables/hyperparameter_search_space_rnn.tex}
-  \caption{RNN hyperparameter search space. Random search: 8 of 16 grid candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-rnn}
+  \caption{\ac{RNN} hyperparameter search space. Random search: 8 of 16 grid candidates per feature subset (6 subsets).}\label{tab:hyperparameter-search-space-rnn}
 \end{table}
-\newpage
+\clearpage
 
 \section{Feature Subset Performance Comparison}
 \label{sec:feature-subset-performance-comparison}
@@ -231,15 +234,16 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \begin{table}[htbp]
   \centering
   \input{tables/feature_subset_performance_comparison_rnn.tex}
-  \caption{\ac{CV} \ac{RMSE} for RNN for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-rnn}
+  \caption{\ac{CV} \ac{RMSE} for \ac{RNN} for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-rnn}
 \end{table}
 \begin{table}[htbp]
   \centering
   \input{tables/feature_subset_performance_comparison_arimax.tex}
-  \caption{\ac{CV} \ac{RMSE} for ARIMAX for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-arimax}
+  \caption{\ac{CV} \ac{RMSE} for \ac{ARIMAX} for different feature-subset configurations. Changes are relative to the target station only row.}\label{tab:feature-subset-performance-comparison-arimax}
 \end{table}
+\clearpage
 
-\subsection{Training and Test Performance}
+\section{Training and Test Performance}
 
 \begin{table}[htbp]
   \centering
@@ -260,21 +264,22 @@ The source code used in this thesis is available at: \url{https://github.com/cel
 \end{table}
 
 % \todo{Change this to the actual appendix}
-\clearpage
+\pagebreak
 \chapter{Code: Notebooks}
 This chapter contains the code for the various notebooks that make up the entire pipeline. Some sections of the notebook are omitted for brevity. The source code used in this thesis is available at: \url{https://github.com/cellularegg/uas-master-thesis-code}.
 
-\input{code/01_fetch_data.tex}
-\input{code/02_preprocessing.tex}
-\input{code/03_feature_engineering.tex}
-\input{code/04_01_train_persistence.tex}
-\input{code/04_02_train_ridge.tex}
-\input{code/04_03_train_mlp.tex}
-\input{code/04_04_train_xgboost.tex}
-\input{code/04_05_train_arima.tex}
-\input{code/04_06_train_extra_trees.tex}
-\input{code/04_07_train_rnn.tex}
-\input{code/04_08_train_arimax.tex}
+% TODO Uncomment!!!
+% \input{code/01_fetch_data.tex}
+% \input{code/02_preprocessing.tex}
+% \input{code/03_feature_engineering.tex}
+% \input{code/04_01_train_persistence.tex}
+% \input{code/04_02_train_ridge.tex}
+% \input{code/04_03_train_mlp.tex}
+% \input{code/04_04_train_xgboost.tex}
+% \input{code/04_05_train_arima.tex}
+% \input{code/04_06_train_extra_trees.tex}
+% \input{code/04_07_train_rnn.tex}
+% \input{code/04_08_train_arimax.tex}
 \clearpage
 
 

@@ -2,17 +2,17 @@
 \toprule
 \textbf{Model} & \textbf{Selected feature subset} & \textbf{Selected hyperparameters} & \textbf{CV RMSE} \\
 \midrule
-RNN & Current water levels, all stations & cell=gru, sequence\_length=24, hidden\_size=16, layers=2 & $12.02$ \\
+RNN & Current water levels, all stations & cell\_type=gru, sequence\_length=24, hidden\_size=16, num\_layers=2 & $12.02$ \\
 \addlinespace
-XGBoost & Full & depth=3, learning\_rate=0.034558 & $12.43$ \\
+XGBoost & Full & max\_depth=3, n\_estimators=478, learning\_rate=0.034558, subsample=0.798256, colsample\_bytree=0.889349, reg\_lambda=0.100618 & $12.43$ \\
 \addlinespace
-MLP & Full & layers=128, alpha=0.410556 & $12.64$ \\
+MLP & Full & hidden\_layer\_sizes=(128,), alpha=0.410556 & $12.64$ \\
 \addlinespace
-Extra Trees & Raw, all stations & depth=16, n\_estimators=375, min\_leaf=1, max\_features=1.0 & $13.27$ \\
+Extra Trees & Raw, all stations & max\_depth=16, n\_estimators=375, min\_samples\_leaf=1, max\_features=1.0 & $13.27$ \\
 \addlinespace
 Ridge & Full & alpha=0.01, log1p=False & $13.32$ \\
 \addlinespace
-ARIMAX & Full & order=(1, 0, 1) & $15.65$ \\
+ARIMAX & Full & order=(1, 0, 1), intercept=True & $15.65$ \\
 \addlinespace
 ARIMA & Not applicable & order=(5, 0, 1), intercept=True & $16.42$ \\
 \addlinespace
