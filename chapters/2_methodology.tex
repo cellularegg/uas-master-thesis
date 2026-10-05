@@ -10,7 +10,7 @@ The main data source for the thesis is the FloodAlert water level data \cite{Flo
 (measured by notification subscribers).
 Additionally the station has multiple upstream measurement stations, which allows for the investigation of the effect of upstream data on forecast performance. 
 
-Each station provides at most two features: water level and flow rate. Since not every station provides both features, the flow rate has been dismissed as a feature and just the water level is used. The historical water level data for the target station dates back to August 4, 2014 and has an hourly resolution, only the last 90 days are available in ``raw'' (mostly 15-minute) resolution.
+Each station provides at most two features: water level and flow rate. Since not every station provides both features, the flow rate is dismissed as a feature and just the water level is used. The historical hourly water level data for the target station dates back to August 4, 2014, only the last 90 days are available in ``raw'' (mostly 15-minute) resolution.
 
 \autoref{tab:water-level-stations} shows the water level measurement stations used in the analysis, including their FloodAlert links and data sources and position along the Danube river. The target station is listed first, followed by the upstream stations ordered by their distance from the target station, with the closest upstream station listed first.
 \begin{table}[htbp]
@@ -85,7 +85,7 @@ Each station provides at most two features: water level and flow rate. Since not
     \label{tab:water-level-stations}
 \end{table}
 \section{Weather Data}
-The weather data was fetched from GeoSphere Austria using the \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021}. The GeoSphere \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021} was used because it provides hourly historical weather data dating back to March 15, 2011, with a spatial resolution of 1 km. Another reason for using this dataset was the hourly update frequency, thus making it suitable for real-time forecasting. The dataset contains several weather variables like temperature, precipitation, wind speed, and humidity. Precipitation and temperature were selected as the weather variables.
+The weather data is fetched from GeoSphere Austria using the \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021}. The GeoSphere \ac{INCA}-v1 dataset \cite{geosphereaustriaINCAv11Meteorologische2021} is used because it provides hourly historical weather data dating back to March 15, 2011, with a spatial resolution of 1 km. Another reason for using this dataset is the hourly update frequency, thus making it suitable for real-time forecasting. The dataset contains several weather variables like temperature, precipitation, wind speed, and humidity. Precipitation and temperature are selected as the weather variables.
 
 % \section{Exploratory Analysis}
 % This chapter focuses on the \ac{EDA} of all the data used in this thesis. If not stated otherwise the analysis is based on the processed data as described in \autoref{sec:data-preprocessing}. 
@@ -100,11 +100,10 @@ The weather data was fetched from GeoSphere Austria using the \ac{INCA}-v1 datas
 % \end{table}
 
 
-%TODO Think of which things to discuss in the eda
 
 \section{Data Preprocessing}
 \label{sec:data-preprocessing}
-The preprocessing pipeline consists of four main stages: the water level data is cleaned, weather data is integrated with the water level observations, the individual station datasets are split into training and test sets, and finally the stations are merged separately for each set.
+The preprocessing pipeline consists of five main stages: the water level data is cleaned, weather data is integrated with the water level observations, the individual station datasets are split into training and test sets, and finally the stations are merged separately for each set.
 
 The water level data is fetched from the FloodAlert API \cite{SOBOSGmbHPublic_waterlevel_api_doc2026}. The measurements are aligned to an hourly temporal resolution, and timestamps are converted to UTC. Invalid measurements, such as values of -9999 or 0, are replaced with missing values; only positive water level values are considered valid. Subsequently, short missing-value gaps of up to twelve hours are filled using forward fill, provided that there are valid measurements before and after the gap. Longer gaps and gaps at the beginning or end of the station timeline remain missing. Additionally, an indicator column is added to record whether individual values are imputed.
 
@@ -122,7 +121,7 @@ The feature engineering step creates additional features from the preprocessed d
   \item Change features: Differences between current and past water levels.
   \item Rolling statistics: Mean, standard deviation, and other summary statistics over a rolling window.
   \item Weather summaries: Aggregated weather data over a rolling window, such as total precipitation or average temperature.
-  \item Quality indicators: Number of imputed values in the preceding $x$ hours.
+  \item Quality indicators: Number of imputed values in the preceding hours.
   \item Calendar features: Encoding of the timestamp into features such as the hour of the day and day of the week.
 \end{enumerate}
 Cyclical calendar features, like hour of the day or day of the week are encoded using sine and cosine transformations to capture their periodic structure. This preserves their cyclical nature and ensures that values at the boundary, like 23:00 and 00:00 are represented as being close together rather than far apart.
@@ -168,7 +167,7 @@ To keep the feature space manageable, the additional lagged, change, rolling, an
     \end{tabularx}
     \caption{Engineered features used for water level forecasting}\label{tab:engineered-features}
 \end{table}
-The final step of the feature engineering is to add a target column for each hour of the forecast horizon. This makes it possible to train and test the models based on the entire forecast horizon. Additionally, a check is performed to ensure that all target values are valid, i.e. neither missing nor imputed. If any of the target values are invalid, the flag is set to false and the sample is subsequently excluded from model training and evaluation.
+The final step of the feature engineering is to add a target column for each hour of the forecast horizon. This makes it possible to train and test the models based on the entire forecast horizon. Additionally, a check is performed to ensure that all target values are valid, i.e. neither missing nor imputed. If any of the target values are invalid, the validity flag is set to false and the sample is subsequently excluded from model training and evaluation.
 
 The resulting input matrix contains 73 predictor features: 45 features are derived from the target station and four features are provided by each of the seven upstream stations.
 \section{Forecasting Strategy}
@@ -187,7 +186,7 @@ The general approach is to use a \ac{MIMO} strategy. Except for \ac{ARIMA} and \
 
 \section{Experimental Design}
 \label{sec:experimental-design}
-The dataset is split into training and test sets (80/20); the test set is only used for the final evaluation and final model selection, while the training set is used for training, hyperparameter tuning, feature selection and model configuration selection. This ensures that the test set remains completely unseen during the model development process. Expanding window \ac{CV} is used to evaluate different hyperparameters and features \cite{hewamalageForecastEvaluationData2023}. \autoref{fig:expanding-window-cv} shows a schematic overview of the \ac{CV} setup; 50\% of the training data is used for training in the first fold and about 10\% of the training data is used for validation in each fold. The training set grows by about 10\% in each fold. Between the folds' training and validation sets there is a gap of 24 hours (equal to the forecast horizon) to prevent data leakage. Before training the rows are checked for eligibility. This check contains the following conditions: all target values must exist and not be imputed and all features must be valid (not missing); this also includes features not used in the current feature subset. This decision has been made to provide a fair comparison between the different subsets regardless of the number of available rows per feature.
+The dataset is split into training and test sets (80/20); the test set is only used for the final evaluation and final model selection, while the training set is used for training, hyperparameter tuning, feature selection and model configuration selection. This ensures that the test set remains completely unseen during the model development process. Expanding window \ac{CV} is used to evaluate different hyperparameters and features \cite{hewamalageForecastEvaluationData2023}. \autoref{fig:expanding-window-cv} shows a schematic overview of the \ac{CV} setup; 50\% of the training data is used for training in the first fold and about 10\% of the training data is used for validation in each fold. The training set grows by about 10\% in each fold. Between the folds' training and validation sets there is a gap of 24 hours (equal to the forecast horizon) to prevent data leakage. Before training the rows are checked for eligibility. This check contains the following conditions: all target values must exist and not be imputed and all features must be valid (not missing); this also includes features not used in the current feature subset. This decision is made to provide a fair comparison between the different subsets regardless of the number of available rows per feature.
 For \ac{RNN}, a complete 24-hour sequence across all features is additionally required. Therefore, \ac{RNN} uses fewer eligible rows than the other models. The \ac{CV} folds are also constructed separately from these eligible rows and therefore differ slightly from those of the other models.
 \input{figures/expanding-window-cv.tex}
 
@@ -230,7 +229,7 @@ The full \ac{CV} is done for each searched hyperparameter configuration and feat
 
 Among the tuned models, only \ac{ARIMA} is not trained on all feature subsets, since \ac{ARIMA} is a univariate model it uses only the target station water level as an input. Ridge regression, \ac{ARIMA} and \ac{ARIMAX} are tuned using grid search, while XGBoost, Extra Trees, \ac{MLP} and \ac{RNN} are tuned using random search. The persistence baseline is not tuned. \cite{bergstraRandomSearchHyperParameter2012, feurerHyperparameterOptimization2019}
 
-MLflow is used to manage the experiments and track the results. After the \ac{CV} the best hyperparameters and model configuration for each model family is selected based on the mean \ac{RMSE} across all folds, which is then retrained on the full training set before being evaluated on the test set. The final model will be the one with the lowest \ac{RMSE} across the full 24-hour forecast horizon on the independent test set.
+MLflow is used to manage the experiments and track the results. After the \ac{CV} the best hyperparameters and model configuration for each model family is selected based on the mean \ac{RMSE} across all folds, which is then retrained on the full training set before being evaluated on the test set. The final model is the one with the lowest \ac{RMSE} across the full 24-hour forecast horizon on the independent test set.
 
 
 %\cite{cerqueiraEvaluatingTimeSeries2020}.
